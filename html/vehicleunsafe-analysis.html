@@ -274,8 +274,13 @@
 			data:set
 		}).then(function(data){
 			if(data.code === "0000"){
-				fn_chart_pie(data.data.pie);
-				fn_chart_line(data.data.line);
+				if(data.data.length === 0){
+					fn_chart_pie();
+					fn_chart_line();
+				}else{
+					fn_chart_pie(data.data.pie);
+					fn_chart_line(data.data.line);
+				}
 			}
 		});
 	}
@@ -402,6 +407,7 @@
 				vehicle_id:sel_vehicle.value,
 				start:$("#menu_start").val(),
 				end:$("#menu_end").val(),
+				poi_key:$("#poi_key").val(),
 				types:JSON.stringify(sel_type.value),
 			};
 			ajax_get_one_vehicle_unsafety_incident_chart(postData1);

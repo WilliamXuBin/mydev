@@ -491,6 +491,8 @@
                 driving_time = $("#driving_time_1").val()+","+$("#driving_time_2").val();
             }else if($("#driving_time_1").val() && !$("#driving_time_2").val()){
                 driving_time = $("#driving_time_1").val()+",0";
+            }else if(!$("#driving_time_1").val() && $("#driving_time_2").val()){
+                driving_time = "0,"+$("#driving_time_2").val();
             }
 
             var data_set = {

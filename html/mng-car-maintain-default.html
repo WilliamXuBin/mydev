@@ -241,7 +241,7 @@
         $(document).off("click","#add_maintain_details").on("click","#add_maintain_details",function(){
             $(".mngCar-addBox").show();
             $("#mab_btn").attr("d-type","add");
-            $(".mab-title").html("添加保单明细");
+            $(".mab-title").html("添加保养明细");
             var data = {
                 maintenance_date:"",
                 accessories_name:"",
@@ -295,7 +295,7 @@
             data = JSON.parse(data);
             $(".mngCar-addBox").show();
             $("#mab_btn").attr("d-type","edit");
-            $(".mab-title").html("编辑保单明细");
+            $(".mab-title").html("编辑保养明细");
             for(var k in data){data[k] = data[k]!=="--"?data[k]:"";}
             console.log(data)
             fn_begin(data);
