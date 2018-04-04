@@ -1,0 +1,25 @@
+<style>
+	.mainBox{width:1200px;margin:42px auto 100px auto;overflow:hidden;}
+	.cdetail-msg{margin-top:130px;width:100%;background:url('/img/capacity/ok.png') no-repeat;background-position:top center;padding-top:140px;}
+	.cdetail-msg-title{color:#fff;text-align:center;font-size:34px;}
+	.cdetail-msg-txt{color:#38b2d5;text-align:center;margin-top:10px;}
+</style>
+
+<div class="mainBox">
+	<div class="cdetail-msg">
+		<div class="cdetail-msg-title">恭喜下单成功（稍后会有客服人员联系您）</div>
+		<div class="cdetail-msg-txt" id="mobile">联系方式：--</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"业务管理"},
+		{name:"订单中心",href:"capacity"},
+		{name:"订单详情"}
+	]);
+	var capacityInfo = JSON.parse(window.sessionStorage.capacityInfo);
+
+	$("#mobile").html("联系方式："+capacityInfo.mobile);
+</script>

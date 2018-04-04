@@ -1,0 +1,150 @@
+<style>
+	.mainBox{margin-top:50px;}
+
+	.capacity-table{margin:20px 0 0 0;}
+	.capacity-table-space{display:inline-block;width:100px;}
+
+</style>
+
+<div class="mainBox">
+	<div class="analysis-loading"></div>
+	<div class="analysis-main"></div>
+</div>
+
+<script type="text/javascript">
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"系统中心"},
+		{name:"车辆管理",href:"mng-nav"},
+		{name:"油耗管理分析",href:"mng-oil-wear"},
+		{name:"油量详情"},
+	]);
+
+	if(window.sessionStorage.info_mngCarOil){
+		var info_mCO = JSON.parse(window.sessionStorage.info_mngCarOil);
+		ajax_get_oil_management_chart(info_mCO);
+	}
+
+	//ajax-超速图表数据
+	function ajax_get_oil_management_chart(set){
+		$.ajax({
+			url:ajax_106+'/get_oil_management_chart',
+			type:'post',
+			dataType:'json',
+			data:{
+				vehicle_info_id:set.id,
+				start:set.start,
+				end:set.end,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+
+				var obj = {
+					title:"油量（L）",
+					infoX:data.infoX,
+					infoY:data.infoY,
+					infoYType:"arr",
+				};
+				fn_chart([obj]);
+			}
+		});
+	}
+	
+
+	function fn_chart(items,type){
+		if(!items || items.length === 0){
+			$(".single-echart-none").show();
+			return;
+		}
+		
+		var colors = ["#008df2","#12e6d4","#fdca00","#ff482f"];
+
+		$(".analysis-main").html("");
+		items.forEach(function(el,index){
+			var html = '<div class="single-item"><div class="single-item-title">'+el.title+'</div><div class="single-item-content single-echart-main"><div class="single-echart" id="m'+index+'"></div><div class="single-echart-none">未查询到结果</div><div class="single-echart-legend" style="display:none;"><span class="legend-1">30km/h以下</span><span class="legend-2">30km/h以下</span><span class="legend-3">30km/h以下</span><span class="legend-4">30km/h以下</span></div></div></div>';
+			$(".analysis-main").append(html);
+
+			var series_data = [];
+			if(el.infoYType == "arr"){
+				el.infoY.forEach(function(el_infoY,index_infoY){
+					series_data.push({
+						name:el_infoY.name,
+			            type:'line',
+			            symbol: 'none',
+			            areaStyle: {
+				            	normal: {
+				            	opacity:0.15,
+				            }
+				        },
+				        itemStyle:{
+				        	normal:{
+				        		color:colors[index_infoY]
+				        	}
+				        },
+			            data:el_infoY.value
+					});
+				});
+			}
+
+			var myChart = echarts.init(document.getElementById("m"+index));
+
+	        var option = {
+	        	color:colors,
+			    tooltip : {
+			        trigger: 'axis',
+			        axisPointer: {
+			            type: 'cross',
+			            label: {
+			                backgroundColor: '#6a7985'
+			            }
+			        }
+			    },
+			    grid: {
+			        left: '3%',
+			        right: '5%',
+			        bottom: '3%',
+			        top: '5%',
+			        containLabel: true
+			    },
+			    xAxis : [
+			        {
+			            type : 'category',
+			            boundaryGap : false,
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            axisTick:{show:false},
+			            splitLine:{show:false},
+			            data : el.infoX
+			        }
+			    ],
+			    yAxis : [
+			        {
+			            type : 'value',
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            //axisTick:{show:false},
+			            splitLine:{show:false},
+			        }
+			    ],
+			    series:series_data
+			};
+
+	        myChart.setOption(option);
+		});
+		if(type)return;
+		$(".single-echart-none").hide();
+	}
+
+	$(function(){
+
+	});
+</script>

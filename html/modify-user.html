@@ -1,0 +1,239 @@
+<style>
+    .userBlock{width:400px;margin:200px auto;}
+    .userBlock-item{margin-bottom:10px;}
+    .userBlock-item-title{width:90px;height:38px;line-height:38px;float:left;}
+    .userBlock-item-content{width:300px;height:38px;line-height:38px;float:right;border-bottom:1px solid rgba(255,255,255,0.1);}
+    .userBlock-item-text{width:300px;height:38px;border:none;background:none;color:#fff;padding:0 20px;}
+    .userBlock-default .userBlock-item-title,.userBlock-default .userBlock-item-content,.userBlock-default .userBlock-item-text{color:#fff;}
+    .userBlock-disable .userBlock-item-title,.userBlock-disable .userBlock-item-content,.userBlock-disable .userBlock-item-text{color:#8c8c8c;}
+
+    .tselect-title{background:none;}
+</style>
+
+<div class="userBlock">
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">用户名：</div>
+        <div class="userBlock-item-content"><input type="text" class="userBlock-item-text urequired" id="username" /></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">姓名：</div>
+        <div class="userBlock-item-content"><input type="text" class="userBlock-item-text urequired" id="realname" /></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">角色：</div>
+        <div class="userBlock-item-content"><div id="sel_role" class="urequired-sel" d-error="请选择角色"></div></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">密码：</div>
+        <div class="userBlock-item-content"><input type="password" class="userBlock-item-text urequired" id="pwd" /></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">确认密码：</div>
+        <div class="userBlock-item-content"><input type="password" class="userBlock-item-text urequired" id="rpwd" /></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">手机号码：</div>
+        <div class="userBlock-item-content"><input type="text" class="userBlock-item-text urequired" id="tel" /></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default" id="item_companyName" style="display:none;">
+        <div class="userBlock-item-title">公司：</div>
+        <div class="userBlock-item-content"><div id="sel_company" class="urequired-sel" d-error="请选择公司"></div></div>
+    </div>
+    <div class="userBlock-item" style="margin-top:50px;">
+        <button class="dbtn" id="btn_user_edit">确定</button>
+    </div>
+</div>
+    
+<script type="text/javascript">
+    var sel_role,
+        sel_company;
+
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"用户管理",href:"user"},
+        {name:"修改用户"},
+    ]);
+
+    var id = window.localStorage.id;
+    var companyName = "";
+    //ajax-getInformation
+    function ajax_post(id){
+        $.ajax({
+            url:ajax_139+'/api/user/query.json',
+            type:'post',
+            dataType:'json',
+            headers:{token:info_login.data.token},
+            data:{id:id},
+        }).then(function(data){
+            if(data.code === "0000"){
+                fn_post(data.data.items[0]);
+            }else{
+                toastr.info(data.message)//提示框
+            }
+        });
+    }
+
+    //fn-information
+    function fn_post(data){
+        if(!data)return;
+        $("#username").val(data.username);//用户名
+        $("#realname").val(data.realname);//姓名
+        sel_role.selected(data.roleid);//角色
+        $("#sel_role").find(".tselect-title").attr("d-val",data.roleid);
+
+        $("#tel").val(data.phone);//手机号码
+        $("#pwd").val("******");//手机号码
+        $("#rpwd").val("******");//手机号码
+        sel_company.selected(data.extraid);
+        $("#sel_company").find(".tselect-title").attr("d-val",data.extraid);
+    }
+
+    //fn-update
+    function ajax_update(data){
+        $.ajax({
+            url:'/api/user/update.json',
+            type:'post',
+            dataType:'json',
+            headers:{token:info_login.data.token},
+            data:data,
+        }).then(function(data){
+            if(data.code === "0000"){
+                new msgAlert({info:data.message,num:1}).on('btnOkClick',function(){
+                    ajax_nav("user");
+                });
+            }
+        });
+    }
+
+    //ajax-角色列表
+    function ajax_get_role_list(){
+        $.ajax({
+            url:ajax_106+'/get_role_list',
+            type:'post',
+            dataType:'json',
+            data:{
+                role_id:info_login.data.roleid,
+            },
+            async:false,
+        }).then(function(data){
+            if(data.code === "0000"){
+                var items = data.data;
+                var options = [{name:"请选择",val:""}];
+                items.forEach(function(el,index){
+                    options.push({name:el.name,val:el.id});
+                });
+                sel_role = new fn_tselect({elem:$("#sel_role"),options:options});
+                event_change_sel_role();//event-角色改变框
+            }
+        });
+    }
+
+    //event-角色改变框
+    function event_change_sel_role(){
+        //角色下拉框改变
+        sel_role.on("change",function(){
+            var id = sel_role.value;
+            if(id){
+                var roleid = parseInt(info_login.data.roleid/100);
+                if(info_login.data.roleid == 1){
+                    var role_super = parseInt(id/100);
+                    if(role_super == 1 || role_super == 2){
+                        $("#item_companyName").find(".userBlock-item-title").html("区域：");
+                    }else if(role_super == 3 || role_super == 4){
+                        $("#item_companyName").find(".userBlock-item-title").html("公司：");
+                    }
+                }else if(roleid == 1 || roleid == 2){
+                    $("#item_companyName").find(".userBlock-item-title").html("区域：");
+                }else if(roleid == 3 || roleid == 4){
+                    $("#item_companyName").find(".userBlock-item-title").html("公司：");
+                }
+
+                $("#item_companyName").show();
+                ajax_get_company_or_region_list(id);//ajax- 根据角色获取公司和地区列表
+            }else{
+                $("#item_companyName").hide();
+            }
+        });
+    }
+
+    //ajax- 根据角色获取公司和地区列表
+    function ajax_get_company_or_region_list(id){
+        $.ajax({
+            url:ajax_106+'/get_company_or_region_list',
+            type:'post',
+            dataType:'json',
+            data:{
+                role_id:info_login.data.roleid,
+                extra_id:info_login.data.extraid,
+                create_role_id:id,
+            },
+            async:false
+        }).then(function(data){
+            if(data.code === "0000"){
+                var items = data.data;
+                var options = [{name:"请选择",val:""}];
+                items.forEach(function(el,index){
+                    options.push({name:el.name,val:el.id,code:el.enterprise_id});
+                });
+                sel_company = new fn_tselect({elem:$("#sel_company"),options:options});
+            }
+        });
+    }
+
+	$(function () {
+        ajax_get_role_list();//ajax-角色列表
+        ajax_post(id)//ajax-getInformation
+
+        //按钮点击
+        $(document).off("click","#btn_user_edit").on("click","#btn_user_edit",function(){
+            if(!form_table())return;
+
+            //信息验证通过之后获取到表单内填写的所有内容            
+            var username = $("#username").val();
+            var realname = $("#realname").val();
+            var role = sel_role.value;
+            var pwd = $("#pwd").val()==="******"?"":$("#pwd").val();
+            var rpwd = $("#rpwd").val()==="******"?"":$("#rpwd").val();
+            var mobile = $("#tel").val();
+            var extraid = sel_company.value;
+            var extraname = sel_company.text;
+            var enterpriseid = "";//总公司ID
+            var provincecode = "";//省政府代码
+
+            var roleid = parseInt(info_login.data.roleid/100);
+            var role_super = parseInt(role/100);
+
+            if(info_login.data.roleid == 1){
+                if(role_super == 1){
+                    provincecode = sel_company.value;//省政府代码
+                }else if(role_super == 2){
+                    provincecode = sel_company.code;//省政府代码
+                }else if(role_super == 3){
+                    enterpriseid = sel_company.value;//总公司ID
+                }else if(role_super == 4){
+                    enterpriseid = sel_company.code;//总公司ID
+                }
+            }else if(roleid == 1 || roleid == 2){
+                provincecode = info_login.data.provincecode;//省政府代码
+            }else if(roleid == 3 || roleid == 4){
+                enterpriseid = info_login.data.enterpriseid;//总公司ID
+            }
+
+            var postData = {
+                id:id,
+                username:username,
+                realname:realname,
+                password:pwd,
+                confirmpassword:rpwd,
+                phone:mobile,
+                roleid:role,
+                extraid:extraid,
+                extraname:extraname,
+                enterpriseid:enterpriseid,
+                provincecode:provincecode,
+            };
+            ajax_update(postData);//fn-update
+        });
+    });
+</script>

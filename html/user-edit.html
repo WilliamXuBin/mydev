@@ -1,0 +1,142 @@
+<link rel="stylesheet" href="/assets/js/datatables/dataTables.bootstrap.css">
+<div class="panel panel-default">
+	<div class="panel-heading">
+		<h3 class="panel-title">Removing search and results count filter</h3>
+		
+		<div class="panel-options">
+			<a href="#" data-toggle="panel">
+				<span class="collapse-icon">&ndash;</span>
+				<span class="expand-icon">+</span>
+			</a>
+			<a href="#" data-toggle="remove">
+				&times;
+			</a>
+		</div>
+	</div>
+	<div class="panel-body">	
+		<div>
+			<button class="btn btn-info btn-sm btn-icon icon-left" id="add">
+				添加
+			</button>
+
+			<button class="btn btn-danger btn-sm btn-icon icon-left" id="remove">
+				删除
+			</button>
+			
+			<button class="btn btn-secondary btn-sm btn-icon icon-left" id="edit">
+				编辑
+			</button>
+		</div>
+		<table class="table table-bordered table-striped" id="example-2">
+			<thead>
+				<tr>
+					<th class="no-sorting">
+						<input type="checkbox" class="cbr">
+					</th>
+					<th>登录名</th>
+					<th>用户名</th>
+					<th>密码</th>
+					<th>角色</th>
+					<th>手机号码</th>
+					<th>修改人</th>
+					<th>修改时间</th>
+				</tr>
+			</thead>
+			
+			<tbody id="table">
+				
+			</tbody>
+		</table>
+		
+	</div>
+</div>
+
+<script type="text/javascript">
+jQuery(document).ready(function($)
+{
+	var userJson = [
+		{user:"qifengle",name:"起风了0",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了1",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了2",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了3",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了4",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了5",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了6",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了7",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了8",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了9",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了10",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了11",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了12",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+		{user:"qifengle",name:"起风了13",pwd:"123456",role:"超级管理员",mobile:"18712345678",editer:"起风了",editTime:"2017-7-25 12:00"},
+	];
+
+	//初始化列表
+	function fun_begin(){
+		//初始化数据
+		var html_user = '';
+		userJson.forEach(function(el,index){
+			html_user += '<tr><td><input type="checkbox" class="cbr" d-index='+index+'></td><td>'+el.user+'</td><td>'+el.name+'</td><td>'+el.pwd+'</td><td>'+el.role+'</td><td>'+el.mobile+'</td><td>'+el.editer+'</td><td>'+el.editTime+'</td></tr>';
+		});
+		$("#table").html(html_user);
+		cbr_replace();
+	}
+	fun_begin();//初始化列表
+	
+
+	//初始化分页
+	$("#example-2").dataTable({
+		dom: "t" + "<'row'<'col-xs-6'i><'col-xs-6'p>>",
+		aoColumns: [
+			{bSortable: false},
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+		],
+	});
+
+	$("#example-2").on('draw.dt', function(){
+		cbr_replace();
+		
+		$state.trigger('change');
+	});
+
+	//点击删除
+	$("#remove").click(function(){
+		var $chcks = $("#example-2 tbody input[type='checkbox']");
+		var arr = [];
+		$.each($chcks,function(index,el){
+			if(el.checked){
+				arr.push(el.getAttribute("d-index"));
+				
+			}
+		});
+		console.log(arr);
+		$.each(arr,function(index,el){
+			userJson.splice(el,1);
+		});
+		fun_begin();//初始化列表
+	});
+
+	//全选按钮事件
+	var $state = $("#example-2 thead input[type='checkbox']");
+	$state.on('change', function(ev){
+		var $chcks = $("#example-2 tbody input[type='checkbox']");
+
+		if($state.is(':checked')){
+			$chcks.prop('checked', true).trigger('change');
+		}else{
+			$chcks.prop('checked', false).trigger('change');
+		}
+	});
+});
+</script>
+
+<script src="/assets/js/datatables/js/jquery.dataTables.js"></script>
+<script src="/assets/js/datatables/dataTables.bootstrap.js"></script>
+<script src="/assets/js/datatables/yadcf/jquery.dataTables.yadcf.js"></script>
+<script src="/assets/js/datatables/tabletools/dataTables.tableTools.min.js"></script>

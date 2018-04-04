@@ -1,0 +1,688 @@
+<style>
+	/**控制面板**/
+	.itBlock-left{width:200px;position:absolute;bottom:10px;left:10px;z-index:9;}
+	.itBlockLeft-tip{box-shadow:0px 3px 6.58px 0.42px rgba(0,0,0,0.8);margin-bottom:10px;background-color:rgba(21,21,30,0.88);padding:13px 20px;}
+	.itBlockLeft-tip .itBlockLeft-content{text-align:center;font-size:22px;color:#fecb00;}
+
+	.itBlockLeft-main{box-shadow:0px 3px 6.58px 0.42px rgba(0,0,0,0.8);background-color:rgba(21,21,30,0.88);}
+	.itBlockLeft-box{border-bottom:1px dashed #4a506b;padding:13px 20px;border-radius:3px;}
+	.itBlockLeft-box:last-child{border:none;}
+	.itBlockLeft-title{color:#fff;position:relative;height:30px;line-height:30px;padding-left:13px;}
+	.itBlockLeft-title:after{position:absolute;top:8px;left:0px;width:4px;height:15px;border-radius:3px;background:#fecb00;content:"\20";}
+	.itBlockLeft-title span{color:#fecb00;}
+	.itBlockLeft-content{height:30px;line-height:30px;color:#fff;padding-left:13px;font-size:12px;}
+
+	.itBlock-right{width:300px;position:absolute;top:110px;right:10px;z-index:9;}
+	.itBlock-bg{background-color:rgba(21,21,30,0.88);box-shadow:0px 3px 6.58px 0.42px rgba(0,0,0,0.8);border-radius:3px;padding:15px 12px;margin-bottom:10px;}
+	.itBlock-title{color:#fff;}
+	.itBlock-content{position:relative;}
+	.itBlock-chart{width:100%;height:150px;}
+	.itBlock-chart-left{width:130px;float:left;}
+	.itBlock-chart-right{width:126px;float:right;padding-top:13px;}
+	.itBlock-chart-txt{}
+	.itBlock-txt-icon{float:left;width:12px;height:12px;background:#fecb00;margin:9px 10px 0 0;}
+	.itBlock-txt-1{float:left;color:#fecb00;height:30px;line-height:30px;margin-right:8px;}
+	.itBlock-txt-2{float:left;color:#fff;height:30px;line-height:30px;}
+
+	.itBlock-center{width:480px;position:absolute;bottom:10px;left:220px;z-index:9;box-shadow:0px 3px 6.58px 0.42px rgba(0,0,0,0.8);}
+	.itBlockCenter-box{background-color:rgba(21,21,30,0.88);border-radius:3px;}
+	.itBlockCenter-box-li{float:left;width:120px;color:#fff;text-align:center;padding:15px 0;cursor:pointer;}
+	.itBlockCenter-box-li a{width:100%;color:#fff;text-align:center;border-right:1px solid #4a506b;display:block;}
+	.itBlockCenter-box-li:last-child a{border-right:none;}
+	.itBlockCenter-box-li span{display:inline-block;height:24px;line-height:24px;background-repeat:no-repeat;background-position:left center;padding-left:22px;}
+	.itBlockCenter-icon1 .default{background-image:url('img/traffic/icon_1.png');color:#b1b5c4;}
+	.itBlockCenter-icon1 .online{background-image:url('img/traffic/icon_11.png');color:#fecb00;}
+	.itBlockCenter-icon2 .default{background-image:url('img/traffic/icon_2.png');color:#b1b5c4;}
+	.itBlockCenter-icon2 .online{background-image:url('img/traffic/icon_22.png');color:#fecb00;}
+	.itBlockCenter-icon3 .default{background-image:url('img/traffic/icon_3.png');color:#b1b5c4;}
+	.itBlockCenter-icon3 .online{background-image:url('img/traffic/icon_33.png');color:#fecb00;}
+	.itBlockCenter-icon4 .default{background-image:url('img/traffic/icon_4.png');color:#b1b5c4;}
+	.itBlockCenter-icon4 .online{background-image:url('img/traffic/icon_44.png');color:#fecb00;}
+
+	.itBlock-table{width:100%;margin-top:24px;}
+	.itBlock-table th,.itBlock-table td{width:33.3%;color:#fff;height:30px;text-align:left;}
+	.itBlock-table th:last-child,.itBlock-table td:last-child{text-align:center;}
+	.itBlock-lineDashed{border-top:1px dashed #4a506b;position:absolute;top:14px;left:-12px;width:calc(100% + 24px);}
+</style>
+<div id="container" tabindex="0"></div>
+<div class="itBlock-left"></div>
+<div class="itBlock-right"></div>
+
+<div class="itBlock-center">
+	<div class="itBlockCenter-box zoom">
+		<div class="itBlockCenter-box-li itBlockCenter-icon1"><a><span class="online">实时路况</span></a></div>
+		<div class="itBlockCenter-box-li itBlockCenter-icon2"><a><span class="default">公交</span></a></div>
+		<div class="itBlockCenter-box-li itBlockCenter-icon3"><a><span class="default">出租车</span></a></div>
+		<div class="itBlockCenter-box-li itBlockCenter-icon4"><a><span class="default">货运车辆</span></a></div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	var city = "本溪";
+	var map = new AMap.Map('container',{
+	    resizeEnable:true,
+	    zoom:13,
+	    center:[123.793859,41.300984],
+	    mapStyle:'amap://styles/b04f07844c76ca4246706310fe3caba3'
+	});
+
+	//实时路况图层
+    var trafficLayer = new AMap.TileLayer.Traffic({
+        zIndex: 10
+    });
+    trafficLayer.setMap(map);
+
+    var mapObj_lineSearch;
+    //实例化公交线路查询类，只取回一条路线
+	AMap.service(["AMap.LineSearch"], function() {
+	    mapObj_lineSearch = new AMap.LineSearch({
+		    pageIndex:1,
+		    city:city,
+		    pageSize:1,
+		    extensions:'all'//返回全部信息
+	    });
+	});
+
+	//搜索路线
+	function fn_linesearch(obj,name,color){
+	    obj.search(name, function(status, result){
+		    if(status === 'complete' && result.info === 'OK'){
+				var arr = result.lineInfo[0].path;
+				//绘制乘车的路线
+		        new AMap.Polyline({
+		            map: map,
+		            path: arr,
+		            strokeColor: color,//线颜色
+		            strokeOpacity: 1,//线透明度
+		            strokeWeight: 4//线宽
+		        });
+				return arr;
+		    }else{
+		        //无数据或者查询失败
+		    }
+		});
+	}
+
+	//加载PointSimplifier，loadUI的路径参数为模块名中 'ui/' 之后的部分 
+	AMapUI.loadUI(['misc/PointSimplifier'], function(PointSimplifier) {
+	    if (!PointSimplifier.supportCanvas) {
+	        alert('当前环境不支持 Canvas！');
+	        return;
+	    }
+
+	    var mapObj_points0 = initPage_points(PointSimplifier,"green"),
+		    mapObj_points1 = initPage_points(PointSimplifier,"red");
+
+	    //点击tab
+		$(document).off("click",".itBlockCenter-box-li").on("click",".itBlockCenter-box-li",function(){
+			$(".itBlockCenter-box-li span").attr("class","default");
+			$(this).find("span").attr("class","online");
+			fn_show_points(false);//展示海量点
+			trafficLayer.hide();//关闭实时路况
+			map.clearMap();
+
+			var str = $(this).find("span").html();
+			if(str === "实时路况"){
+				ajax_get_intelligent_traffic_data(str,1);
+			}else if(str === "公交"){
+				ajax_get_intelligent_traffic_data(str,2);
+			}else if(str === "出租车"){
+				ajax_get_intelligent_traffic_data(str,3);
+			}else if(str === "货运车辆"){
+				ajax_get_intelligent_traffic_data(str,4);
+			}
+		});
+	    
+		//ajax-获取数据
+		function ajax_get_intelligent_traffic_data(str,num){
+			$.ajax({
+				url:'https://api0.youbanganda.com/get_intelligent_traffic_data',
+				type:'post',
+				dataType:'json',
+				data:{type:num}
+			}).then(function(data){
+				if(data.code === "0000"){
+					data = data.data;
+					if(str === "实时路况"){
+						fn_realTime(data);//实时路况
+						trafficLayer.show();
+						setTimeout(function(){map.clearMap();},1000);
+					}else if(str === "公交"){
+						for(var i=1;i<50;i++){
+							var color = "#fcc92e";
+							if(parseInt(i/4) === i/4)color="#f9391c";
+							fn_linesearch(mapObj_lineSearch,'"'+i+'"',color);//搜索路线
+						}
+						map.setCenter([123.793859,41.300984]);
+						map.setZoom(13);
+						fn_bus(data);//公交
+					}else if(str === "出租车"){
+						ajax_get_map_taxi_points();//ajax_获取地图上出租车位置
+						fn_taxi(data);//出租车
+						setTimeout(function(){map.clearMap();},1000);
+					}else if(str === "货运车辆"){
+						ajax_get_map_truck_points();//ajax_获取地图上货运车辆位置
+						fn_truck(data);//货运车辆
+						setTimeout(function(){map.clearMap();},1000);
+					}
+				}
+			});
+		}
+		ajax_get_intelligent_traffic_data("实时路况",1);
+
+	    //ajax_获取地图上出租车位置
+	    function ajax_get_map_taxi_points(){
+	    	$.ajax({
+		        url:'https://api0.youbanganda.com/get_map_taxi_points',
+		        type:'get',
+		        dataType:'json',
+		    }).then(function(data){
+		    	if(data.code === "0000"){
+		    		var arr = fn_format(data.data);
+		    		fn_show_points(arr);//展示海量点
+		    	}
+		    });
+	    }
+
+	    //ajax_获取地图上货运车辆位置
+	    function ajax_get_map_truck_points(){
+	    	$.ajax({
+		        url:'https://api0.youbanganda.com/get_map_truck_points',
+		        type:'get',
+		        dataType:'json',
+		    }).then(function(data){
+		    	if(data.code === "0000"){
+		    		var arr = fn_format(data.data);
+		    		fn_show_points(arr);//展示海量点
+		    	}
+		    });
+	    }
+
+	    //展示海量点
+	    function fn_show_points(items){
+	    	if(!items || items.length===0){
+	    		mapObj_points0.setData([]);
+	    		mapObj_points1.setData([]);
+	    		return;
+	    	}
+
+    		mapObj_points0.setData(items[0]);//设置数据源
+    		mapObj_points1.setData(items[1]);//设置数据源
+	    }
+	});
+
+	//格式化返回数据源
+	function fn_format(items){
+		var arr0 = [],
+			arr1 = [];
+		items.forEach(function(el,index){
+			if(el.type == 0){
+				arr0.push(el);
+			}else{
+				arr1.push(el);
+			}
+		});
+		return [arr0,arr1];
+	}
+
+	//实例化海量点
+	function initPage_points(PointSimplifier,img) {
+	    //创建组件实例
+	    var obj = new PointSimplifier({
+	        map: map, //关联的map
+	        compareDataItem: function(a, b, aIndex, bIndex) {
+	            //数据源中靠后的元素优先，index大的排到前面去
+	            return aIndex > bIndex ? -1 : 1;
+	        },
+	        getPosition: function(dataItem) {
+	            //返回数据项的经纬度，AMap.LngLat实例或者经纬度数组
+	            return dataItem.position;
+	        },
+	        getHoverTitle: function(dataItem, idx) {
+	            //返回数据项的Title信息，鼠标hover时显示
+	            return '序号: ' + idx;
+	        },
+	        renderOptions: {
+	            //点的样式
+	            pointStyle: {
+	                //绘制点占据的矩形区域
+	                content: PointSimplifier.Render.Canvas.getImageContent(
+	                    'img/traffic/'+img+'.png',
+	                    function onload() {
+	                        obj.renderLater();
+	                    },
+	                    function onerror(e) {
+	                        alert('图片加载失败！');
+	                    }),
+	                width:16,
+	                height:20,
+	                fillStyle: 'blue' //蓝色填充
+	            }
+	        }
+	    });
+
+	    return obj;
+	}
+
+	//fn-拆线统计图
+	//	var config = {
+	//		elem:"taxi_chart1",
+	//		color:"#fe6600",
+	//		x:["周一","周二","周三","周四","周五","周六","周七"],
+	//		y:[10,20,5,90,4,16,50],
+	//	};
+	function fn_chart_line(config){	
+        var myChart = echarts.init(document.getElementById(config.elem));
+
+        var option = {
+        	color:config.colors,
+		    tooltip : {
+		        trigger: 'axis',
+		        axisPointer: {
+		            type: 'cross',
+		        }
+		    },
+		    grid: {
+		        left: '0%',
+		        right: '5%',
+		        bottom: '0%',
+		        top:'10%',
+		        containLabel: true
+		    },
+		    xAxis : [
+		        {
+		            type : 'category',
+		            boundaryGap : false,
+		            data :config.x,
+		            axisLabel:{
+		            	textStyle:{color:"#fff"}
+		            },
+		            axisLine:{
+		            	lineStyle:{color:"#4a506b"}
+		            },
+		        }
+		    ],
+		    yAxis : [
+		        {
+		            type : 'value',
+		            axisLabel:{
+		            	textStyle:{color:"#fff"}
+		            },
+		            axisLine:{
+		            	lineStyle:{color:"#4a506b"}
+		            },
+		            splitLine:{show:false},
+		        }
+		    ],
+		    series : [
+		        {
+		            name:config.name,
+		            type:'line',
+		            symbol: 'none',
+		            data:config.y
+		        },
+		    ]
+		};
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+	}
+	
+	//fn-饼图统计图
+	//	var config = {
+	//		elem:"",
+	//		elem_txt:"",
+	//		color:"#fe6600",
+	//		x:["周一","周二","周三","周四","周五","周六","周七"],
+	//		y:[10,20,5,90,4,16,50],
+	//	};
+	function fn_chart_pie(config){	
+        var myChart = echarts.init(document.getElementById(config.elem));
+
+        var option = {
+        	color:config.colors,
+        	tooltip: {
+		        trigger: 'item',
+		        //formatter: "{a} <br/>{b}: {c} ({d}%)"
+		    },
+		    grid: {
+		        left: '0%',
+		        right: '0%',
+		        bottom: '0%',
+		        top:'0%',
+		        containLabel: true
+		    },
+		    series : [
+		        {
+		            name: config.name,
+		            type: 'pie',
+		            radius : '85%',
+		            center: ['50%', '50%'],
+		            data:config.data,
+		            label:{
+		            	normal: {
+		                    show: false,
+		                },
+		            },
+		            labelLine: {
+		                normal: {
+		                    show: false
+		                }
+		            },
+		        }
+		    ]
+		};
+
+        myChart.setOption(option);
+
+        var html = '';
+        config.txts.forEach(function(el,index){
+        	html += '<div class="itBlock-chart-txt zoom"><div class="itBlock-txt-icon" style="'+config.colors[index]+'"></div><div class="itBlock-txt-1" style="color:'+config.colors[index]+';">'+el.km+'km/h：</div><div class="itBlock-txt-2">'+el.num+'%</div></div>';
+        });
+
+        $("#"+config.elem_txt).html(html);
+	}
+
+	//排序
+	function fn_rank(config){
+		var html_list = '<tr><th>排名</th><th>线路名称</th><th>平均速度</th></tr>';
+		config.items.forEach(function(el,index){
+			html_list += '<tr><td>'+el.rank+'</td><td>'+el.name+'</td><td>'+el.speed+'</td></tr>';
+		});
+		
+		var html = '<div class="itBlock-lineDashed"></div><div style="overflow:hidden;"><table class="itBlock-table">'+html_list+'</table></div>';
+
+		$("#"+config.elem).html(html);
+	}
+
+	//fn-左侧信息列表
+	function fn_tabInfo(items){
+		var html_main = '';
+		items.forEach(function(el,index){
+			if(index === 0)return;
+			html_main += '<div class="itBlockLeft-box"><div class="itBlockLeft-title">'+el.title+'</div><div class="itBlockLeft-content">'+el.content+'</div></div>';
+		});
+
+		var html_tip = '<div class="itBlockLeft-tip"><div class="itBlockLeft-title">'+items[0].title+'</div><div class="itBlockLeft-content">'+items[0].content+'</div></div>';
+
+		var html = html_tip+'<div class="itBlockLeft-main">'+html_main+'</div>';
+		$(".itBlock-left").html(html);
+	}
+
+	//右侧HTML
+	function fn_html_right(items){
+		var html = '';
+		items.forEach(function(el,index){
+			var id = "";
+			var content = "";
+			if(el.type==="line"){
+				content = '<div class="itBlock-chart" id="'+el.elem+'"></div>';
+			}else if(el.type==="pie"){
+				content = '<div class="itBlock-chart itBlock-chart-left" id="'+el.elem+'"></div><div class="itBlock-chart-right" id="'+el.elem_txt+'"></div>';
+			}else{
+				id = el.elem;
+			}
+
+			html += '<div class="itBlock-bg"><div class="itBlock-title">'+el.title+'</div><div class="itBlock-content zoom" id="'+id+'">'+content+'</div></div>';
+		});
+
+		$(".itBlock-right").html(html);
+	}
+
+	//fn-设置数据
+	function fn_setData_right(items){
+		var items_right = [];
+		items.forEach(function(el,index){
+			if(el.type === "line" || el.type === "rank"){
+				items_right.push({
+					elem:"m"+index,
+					title:el.title,
+					type:el.type
+				});
+			}else if(el.type === "pie"){
+				items_right.push({
+					elem:"m"+index,
+					elem_txt:"m"+index+"_txt",
+					title:el.title,
+					type:el.type
+				});
+			}
+		});
+		fn_html_right(items_right);//右侧HTML
+
+		items.forEach(function(el,index){
+			var config;
+			if(el.type === "line"){
+				config = {
+					elem:"m"+index,
+					colors:el.colors,
+					x:el.x,
+					y:el.y,
+				};
+				fn_chart_line(config);//fn-拆线统计图
+			}else if(el.type === "pie"){
+				config = {
+					elem:"m"+index,
+					elem_txt:"m"+index+"_txt",
+					colors:el.colors,
+					name:el.title,
+					data:el.data,
+					txts:el.txts
+				};
+				fn_chart_pie(config);//fn-饼图统计图
+			}else if(el.type === "rank"){
+				config = {
+					elem:"m"+index,
+					title:el.title,
+					items:el.items
+				};
+				fn_rank(config);//排序
+			}
+		});
+
+		fn_size_window($(".itBlock-right"),10);//窗体大小
+	}
+
+	//实时路况
+	function fn_realTime(data){
+		// var data = {
+		// 	charts: [
+		// 		{
+		// 			type:"line",
+		// 			title:"今日拥堵指数变化",
+		// 			colors:["#fe6600"],
+		// 			x:["周一","周二","周三","周四","周五","周六","周七"],
+		// 			y:[10,20,5,90,4,16,50]
+		// 		},
+		// 		{
+		// 			type:"pie",
+		// 			title:"今日早高峰道路通行状态",
+		// 			colors:["#fecb00","#ff9f00","#fe7600"],
+		// 			data:[
+		// 				{value:20, name:'t1'},
+		// 				{value:30, name:'t2'},
+		// 				{value:50, name:'t3'}
+		// 			],
+		// 			txts:[
+		// 				{km:20,num:20},
+		// 				{km:30,num:30},
+		// 				{km:50,num:50}
+		// 			]
+		// 		},
+		// 		{
+		// 			type:"pie",
+		// 			title:"今日晚高峰道路通告状态",
+		// 			colors:["#fecb00","#ff9f00","#fe7600"],
+		// 			data:[
+		// 				{value:20, name:'t1'},
+		// 				{value:30, name:'t2'},
+		// 				{value:50, name:'t3'}
+		// 			],
+		// 			txts:[
+		// 				{km:20,num:20},
+		// 				{km:30,num:30},
+		// 				{km:50,num:50}
+		// 			]
+		// 		}
+		// 	],
+		// 	infos:[
+		// 		{title:'畅行指数：<span>7</span>',content:'基本畅通'},
+		// 		{title:'全市拥堵情况',content:'基本畅通'},
+		// 		{title:'当前车辆平均速度',content:'基本畅通'},
+		// 	],
+		// };
+
+		fn_setData_right( data.charts);//fn-设置数据
+		fn_tabInfo(data.infos);//fn-左侧信息列表
+	}
+
+	//公交
+	function fn_bus(data){
+		// var data = {
+		// 	charts: [
+		// 		{
+		// 			type:"rank",
+		// 			title:"今日在线营运率",
+		// 			items:[
+		// 				{rank:"1",name:"324",speed:"20km/h"},
+		// 				{rank:"2",name:"334",speed:"30km/h"},
+		// 				{rank:"3",name:"344",speed:"40km/h"},
+		// 			]
+		// 		},
+		// 		{
+		// 			type:"pie",
+		// 			title:"今日早高峰道路通行状态",
+		// 			colors:["#fecb00","#ff9f00","#fe7600"],
+		// 			data:[
+		// 				{value:20, name:'t1'},
+		// 				{value:30, name:'t2'},
+		// 				{value:50, name:'t3'}
+		// 			],
+		// 			txts:[
+		// 				{km:20,num:20},
+		// 				{km:30,num:30},
+		// 				{km:50,num:50}
+		// 			]
+		// 		},
+		// 		{
+		// 			type:"line",
+		// 			title:"今日拥堵指数变化",
+		// 			colors:["#fe6600"],
+		// 			x:["周一","周二","周三","周四","周五","周六","周七"],
+		// 			y:[10,20,5,90,4,16,50]
+		// 		},
+		// 	],
+		// 	infos:[
+		// 		{title:'畅行指数：<span>7</span>',content:'基本畅通'},
+		// 		{title:'智能车机车辆总数',content:'1003辆'},
+		// 		{title:'公交车辆数',content:'100辆'},
+		// 		{title:'公交线路数',content:'20条'},
+		// 		{title:'当前车辆平均速度',content:'20km/h'},
+		// 	],
+		// };
+
+		fn_setData_right(data.charts);//fn-设置数据
+		fn_tabInfo(data.infos);//fn-左侧信息列表
+	}
+
+	//出租车
+	function fn_taxi(data){
+		// var data = {
+		// 	charts: [
+		// 		{
+		// 			type:"line",
+		// 			title:"今日在线营运率",
+		// 			colors:["#fe6600"],
+		// 			x:["周一","周二","周三","周四","周五","周六","周七"],
+		// 			y:[10,20,5,90,4,16,50]
+		// 		},
+		// 		{
+		// 			type:"pie",
+		// 			title:"今日出租车平均速度占比",
+		// 			colors:["#fecb00","#ff9f00","#fe7600"],
+		// 			data:[
+		// 				{value:335, name:'t1'},
+		// 				{value:335, name:'t2'},
+		// 				{value:335, name:'t3'}
+		// 			],
+		// 			txts:[
+		// 				{km:10,num:20},
+		// 				{km:20,num:30},
+		// 				{km:40,num:50}
+		// 			]
+		// 		},
+		// 		{
+		// 			type:"line",
+		// 			title:"近七天智能车机在线率",
+		// 			colors:["#fe6600"],
+		// 			x:["周一","周二","周三","周四","周五","周六","周七"],
+		// 			y:[10,20,5,90,4,16,50]
+		// 		}
+		// 	],
+		// 	infos:[
+		// 		{title:'畅行指数：<span>7</span>',content:'基本畅通'},
+		// 		{title:'智能车机车辆总数',content:'1003辆'},
+		// 		{title:'在线车辆总数',content:'100辆'},
+		// 		{title:'智能车机上线率',content:'20%'},
+		// 		{title:'当前车辆平均速度',content:'20km/h'},
+		// 		{title:'车辆平均里程',content:'20km/h'},
+		// 	],
+		// };
+
+		fn_setData_right( data.charts);//fn-设置数据
+		fn_tabInfo(data.infos);//fn-左侧信息列表
+	}
+
+	//货运车辆
+	function fn_truck(data){
+		// var data = {
+		// 	charts: [
+		// 		{
+		// 			type:"line",
+		// 			title:"今日区域内货车车辆总数变化",
+		// 			colors:["#fe6600"],
+		// 			x:["周一","周二","周三","周四","周五","周六","周七"],
+		// 			y:[10,20,5,90,4,16,50]
+		// 		},
+		// 		{
+		// 			type:"pie",
+		// 			title:"今日主要货运干线拥堵情况",
+		// 			colors:["#fecb00","#ff9f00","#fe7600","#ff3500"],
+		// 			data:[
+		// 				{value:335, name:'t1'},
+		// 				{value:335, name:'t2'},
+		// 				{value:335, name:'t3'},
+		// 				{value:335, name:'t4'},
+		// 			],
+		// 			txts:[
+		// 				{km:10,num:20},
+		// 				{km:20,num:30},
+		// 				{km:40,num:50},
+		// 				{km:40,num:60},
+		// 			]
+		// 		},
+		// 		{
+		// 			type:"line",
+		// 			title:"近七天货运总量变化",
+		// 			colors:["#fe6600"],
+		// 			x:["周一","周二","周三","周四","周五","周六","周七"],
+		// 			y:[10,20,5,90,4,16,50]
+		// 		}
+		// 	],
+		// 	infos:[
+		// 		{title:'畅行指数：<span>7</span>',content:'基本畅通'},
+		// 		{title:'智能车机车辆总数',content:'1003辆'},
+		// 		{title:'在线车辆总数',content:'100辆'},
+		// 		{title:'智能车机上线率',content:'20%'},
+		// 		{title:'当前车辆平均速度',content:'20km/h'},
+		// 		{title:'车辆平均里程',content:'20km/h'},
+		// 	],
+		// };
+
+		fn_setData_right( data.charts);//fn-设置数据
+		fn_tabInfo(data.infos);//fn-左侧信息列表
+	}
+
+	var _height = $(window).height()-100;
+	$("#container").height(_height);
+</script>

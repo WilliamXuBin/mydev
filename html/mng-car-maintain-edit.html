@@ -1,0 +1,189 @@
+<style>
+    .mngCar-addBox{display:none;}
+    .mngCar-ab{position:fixed;left:50%;top:50%;width:400px;background:#fff;border-radius:3px;z-index:9;margin:-250px  0 0 -200px;}
+    .mngCar-ab-bg{position:fixed;left:0;top:0;width:100%;height:100%;background:#000;opacity:0.5;z-index:8;}
+    .mab-title{color:#38579d;border-bottom:1px solid #ccc;margin:0 15px;height:50px;line-height:50px;}
+    .mab-content{margin:20px 15px 10px 10px;}
+    .mab-item{margin-bottom:10px;}
+    .mab-item-title{float:left;width:79px;text-align:right;line-height:34px;}
+    .mab-item-content{float:left;width:calc(100% - 79px);position:relative;}
+    .mab-item-title span{color:red;}
+    .mab-item-text{background:none;border:1px solid #ccc;border-radius:3px;width:100%;padding:0 10px;height:34px;}
+    .mab-btn{margin-top:40px;}
+    .mab-btn button{width:calc(50% - 10px);float:left;}
+    .mab-btn button:last-child{float:right;}
+    .mab-icon{position:absolute;top:0px;right:5px;width:26px;height:34px;background-image:url("img/icon/date_white.png");background-repeat:no-repeat;background-position:right center;}
+    .mab-info{position:absolute;top:0px;right:10px;height:34px;line-height:34px;}
+    .mab-item-prd{padding-right:34px;}
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-main"></div>
+    
+    <div class="mngCar-add-btn"><button class="moperation-btn" id="save">确定</button></div>
+</div>
+
+<script type="text/javascript">
+    var menu,
+        sel_arr,
+        sel_license_plate=[{name:"请选择",val:""}],
+        data_type_maintain=[{name:"请选择",val:""}];;
+
+    var info_mn;
+    if(window.sessionStorage.info_mngCarMaintain){
+        info_mn = JSON.parse(window.sessionStorage.info_mngCarMaintain);
+    }
+
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"车辆保养管理"},
+        {name:"添加保养信息"},
+    ]);
+    
+    var tt = {
+        elem:$("#ttable"),
+        titles:['序号','明细项目','送修日期','配件名称','单位','数量','单价（元）','总金额（元）','操作'],
+        items:"请选择条件查询",
+    };
+    var ttable = new fn_ttable(tt);
+
+    function fn_begin(data){
+        var json = {
+            elem:$(".mngCar-main"),
+            items:[
+                {
+                    title:"保养信息",
+                    items:[
+                        {title:"车牌号码：",type:"select",required:true,options:sel_license_plate,selected:data.vehicle_info_id,id:"license_plate"},
+                        {title:"保养日期：",required:true,type:"date",value:data.maintenance_date,id:"maintenance_date"},
+                        {title:"保养编号：",value:data.maintenance_number,id:"maintenance_number"},
+                        {title:"维保养类型",options:data_type_maintain,selected:data.maintenance_type,type:"select",id:"maintenance_type"},
+                        {title:"保养项目：",value:data.maintenance_program,id:"maintenance_program"},
+                        {title:"标准保养里程：",value:data.maintenance_personnel,id:"maintenance_personnel"},
+                        {title:"保养时里程值：",value:data.expected_maintenance_days,id:"expected_maintenance_days"},
+                        {title:"保养厂：",value:data.maintenance_plant,id:"maintenance_plant"},
+                        {title:"保养总金额：",value:data.maintenance_amount,id:"maintenance_amount"},
+                        {title:"保养描述：",value:data.reason_maintenance,id:"reason_maintenance",colspan:3},
+                        
+                    ],
+                },
+            ]
+        };
+        menu = new fn_edit_begin(json);
+    }
+
+    var postData = {
+        vehicle_info_id:"",
+        maintenance_date:"2018-01-08",
+        maintenance_number:"123",
+        maintenance_type:"",
+        maintenance_program:"maintenance_program",
+        maintenance_personnel:"maintenance_personnel",
+        expected_maintenance_days:"expected_maintenance_days",
+        maintenance_plant:"maintenance_plant",
+        maintenance_amount:"maintenance_amount",
+        reason_maintenance:"reason_maintenance",
+    };
+    //fn_begin(postData)
+
+    function ajax_get_vehicle_info_pre(){
+        $.ajax({
+            url:'https://api0.youbanganda.com/get_vehicle_info_pre',
+            type:"post",
+            dataType:"json",
+        }).then(function(data){
+            if(data.code === "0000"){
+                var json_sel = data.data;
+
+                //保养类型
+                json_sel.type.maintain.forEach(function(el){
+                    data_type_maintain.push(el);
+                });
+
+                ajax_get_enterprise_vehicle_license_plates();
+            }
+            
+        });
+    }
+    ajax_get_vehicle_info_pre();
+
+    function ajax_get_enterprise_vehicle_license_plates(){
+        $.ajax({
+            url:ajax_106+"/get_enterprise_vehicle_license_plates",
+            type:"post",
+            dataType:"json",
+            data:{
+                extra_id:info_login.data.extraid
+            }
+        }).then(function(data){
+            if(data.code === "0000"){
+                sel_license_plate = [{name:"请选择",val:""}];
+                data.data.forEach(function(el,index){
+                    sel_license_plate.push({val:el.id,name:el.license_plate});
+                });
+
+                fn_begin(postData);
+                ajax_get_one_maintaince_record(info_mn.id);
+            }else{
+                fn_begin(postData);
+            }
+        });
+    }
+
+    function ajax_get_one_maintaince_record(id){
+        $.ajax({
+            url:ajax_106+"/get_one_maintaince_record",
+            type:"post",
+            dataType:"json",
+            data:{
+                id:id
+            }
+        }).then(function(data){
+            if(data.code === "0000"){
+                fn_begin(data.data);
+            }
+        });
+    }
+
+    function ajax_update_maintaince_record(set){
+        $.ajax({
+            url:ajax_106+"/update_maintaince_record",
+            type:"post",
+            dataType:"json",
+            data:set,
+        }).then(function(data){
+            if(data.code === "0000"){
+                toastr.success(data.message);
+                ajax_nav("mng-car-maintain");
+            }
+        });
+    }
+
+    $(function(){
+        //event-save
+        $(document).off("click","#save").on("click","#save",function(){
+            var is = menu.is_required();
+            var sel_arr = menu.sel_arr;
+            if(!is)return;
+            var data_set = {
+                id:info_mn.id,
+                vehicle_info_id:sel_arr[0].value,
+                maintenance_date:$("#maintenance_date").val(),
+                maintenance_number:$("#maintenance_number").val(),
+                maintenance_type:sel_arr[1].value,
+                maintenance_program:$("#maintenance_program").val(),
+                maintenance_personnel:$("#maintenance_personnel").val(),
+                expected_maintenance_days:$("#expected_maintenance_days").val(),
+                maintenance_plant:$("#maintenance_plant").val(),
+                maintenance_amount:$("#maintenance_amount").val(),
+                reason_maintenance:$("#reason_maintenance").val(),
+            };
+            ajax_update_maintaince_record(data_set);
+        });
+    });
+</script>
+
+
+

@@ -1,0 +1,159 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+</style>
+
+<div class="analysis zoom">
+	<div class="moperation zoom">
+		<div class="moperation-left" id="moperation_txt"></div>
+	</div>
+	<table class="ttable" id="ttable"></table>
+	<div id="pageDemo"></div>
+</div>
+<script type="text/javascript">
+clearTimer();//清除定时器
+
+var tt = {
+	elem:$("#ttable"),
+	titles:['序列号','车牌号','公司名称','时间'],
+	items:"请选择条件查询",
+};
+var ttable = new fn_ttable(tt);
+
+var pageSign = 1;//分页需要的参数
+var curr = 1;//分页当前页
+var data_set = {
+	code:"",
+	start:"",
+	end:"",
+	page:1,
+	interval:10,
+};
+
+var url = "";//ajax
+
+//ajax-获取区域围栏
+function ajax_get_regionfence_in_detail(set){
+	curr = set.page;//分页当前页
+	$.ajax({
+		url:ajax_106+url,
+		type:'post',
+		dataType:'json',
+		data:set,
+		async:true,
+	}).then(function(data){
+		if(data.code === "0000"){
+			data = data.data;
+			if(pageSign===1){
+				pageSign++;
+				new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_get_regionfence_in_detail,set:set});//初始化分页
+			}
+			fn_list(data.items);//fn-详情列表
+		}
+	});
+}
+
+function fn_list(items){	
+	if(!items || items.length==0){
+		ttable.init({items:[]});
+		return;
+	}
+
+	var items = fn_format_arr(items);
+
+	var arr = [];
+	items.forEach(function(el,index){
+		index++;
+		if(curr-1){
+			if(index==10){
+				index = index*curr;
+			}else{
+				index = (curr-1)+""+index
+			}
+		}
+		
+		var obj = {tds:[
+			index,
+			el.licence_plates,
+			el.name,
+			el.insert_time,
+		]};
+		arr.push(obj);
+	});
+	ttable.init({items:arr});
+}
+
+$(function(){
+	$("#menu_searchBox").hide();//隐藏菜单
+	if(!window.sessionStorage.info_detail){
+		return;
+	}
+	var info_detail = JSON.parse(window.sessionStorage.info_detail);
+
+	if(info_detail.type === "region_in" || info_detail.type === "region_out"){
+		data_set = {
+			code:info_detail.code,
+			start:info_detail.start,
+			end:info_detail.end,
+			role_id:info_login.data.roleid,
+			extra_id:info_login.data.extraid,
+			page:1,
+			interval:10,
+		};
+
+		if(info_detail.type === "region_in"){
+			data_set.type = 1;
+		}else{
+			data_set.type = 2;
+		}
+	}else if(info_detail.type === "fence_in" || info_detail.type === "fence_out" || info_detail.type === "vehicleoverspeed"){
+		data_set = {
+			id:info_detail.id,
+			start:info_detail.start,
+			end:info_detail.end,
+			page:1,
+			interval:10,
+		};
+
+		if(info_detail.type != "vehicleoverspeed"){
+			data_set.role_id = info_login.data.roleid;
+			data_set.extra_id = info_login.data.extraid;
+
+			if(info_detail.type === "fence_in"){
+				data_set.type = 1;
+			}else{
+				data_set.type = 2;
+			}
+		}
+		
+	}
+
+	var ajax_urls = [
+		{type:"region_in",url:"/get_regionfence_inout_detail",ttle:"区域围栏统计驶入车辆",parent_tle:"区域围栏出入统计",parent_url:"regionfence-analysis"},
+		{type:"region_out",url:"/get_regionfence_inout_detail",ttle:"区域围栏统计驶出车辆",parent_tle:"区域围栏出入统计",parent_url:"regionfence-analysis"},
+		{type:"fence_in",url:"/get_electricfence_inout_detail",ttle:"电子围栏统计驶入车辆",parent_tle:"电子围栏出入统计",parent_url:"electricfence-analysis"},
+		{type:"fence_out",url:"/get_electricfence_inout_detail",ttle:"电子围栏统计驶出车辆",parent_tle:"电子围栏出入统计",parent_url:"electricfence-analysis"},
+		{type:"vehicleoverspeed",url:"/get_vehicle_overspeed_detail",ttle:"超速统计详情",parent_tle:"超速统计",parent_url:"vehicleoverspeed-analysis"}
+	];
+
+	url = "";
+	var ttle = "",
+		parent_tle = "",
+		parent_url = "";
+	ajax_urls.forEach(function(el,index){
+		if(el.type === info_detail.type){
+			url = el.url;
+			ttle = el.ttle;
+			parent_tle = el.parent_tle;
+			parent_url = el.parent_url;
+		}
+	});
+	
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"分析中心"},
+		{name:parent_tle,href:parent_url},
+		{name:ttle}
+	]);
+	ajax_get_regionfence_in_detail(data_set)//ajax-获取区域围栏
+});
+</script>

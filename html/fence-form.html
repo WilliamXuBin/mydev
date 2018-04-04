@@ -1,0 +1,319 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+	.ttable .hover{margin:0 3px;}
+	.moperation{margin-top:10px;}
+</style>
+
+<div class="analysis zoom">
+	<div class="dtab zoom">
+		<span class="active">点围栏</span>
+		<span>区域围栏</span>
+		<span>省市围栏</span>
+	</div>
+
+	<table class="ttable" id="ttable"></table>
+
+	<div class="moperation zoom">
+		<div class="moperation-left"><button class="moperation-btn" id="remove">删除</button></div>
+		<div class="moperation-right"><button class="moperation-btn" id="btn-changeRoute">返回地图</button></div>
+	</div>
+	<div id="pageDemo"></div>
+</div>
+
+<script type="text/javascript">
+clearTimer();//清除定时器
+
+//fn_breadcrumbs
+fn_breadcrumbs([
+	{name:"监控管理"},
+	{name:"电子围栏",href:"fence"},
+	{name:"电子围栏报表"}
+]);
+
+var menu_selected;//菜单
+
+var tt = {
+	elem:$("#ttable"),
+	titles:['checkbox','围栏名','中心点','半径','操作'],
+	items:"当前没有数据",
+};
+var ttable = new fn_ttable(tt);
+
+$(function(){
+	var pageSign = 1;//分页需要的参数
+
+	var list;//围栏数据
+
+	var curr = 1;//分页当前页
+	var data_set = {
+		user_id:info_login.data.id,
+		name_key:"",
+		location_key:"",
+		page:1,
+		interval:10,
+		type:1,
+	};
+
+	//ajax-获得电子围栏
+	function ajax_post(set){
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/search_or_get_user_electricfence',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_post,set:set});//初始化分页
+				}
+
+				if(set.type == 1){
+					fn_list(data.items);
+				}else{
+					fn_list_regionfence(data.items);
+				}
+			}
+		});
+	}
+	ajax_post(data_set);//ajax-获得电子围栏
+
+	//ajax-获取省市围栏
+	function ajax_search_or_get_user_regionfence(set){
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/search_or_get_user_regionfence',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_search_or_get_user_regionfence,set:set});//初始化分页
+				}
+
+				fn_list_province(data.items);
+			}
+		});
+	}
+
+	//fn-点围栏
+	function fn_list(items){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+		
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			var postData = {
+				id:el.id,
+				gps_lon:el.gps_lon,
+				gps_lat:el.gps_lat,
+				extra:el.extra,
+				name:el.name,
+				location_name:el.location_name,
+				poi_name:el.poi_name,
+				radius:el.radius,
+				type:"点围栏"
+			};
+			var obj = {tds:[
+				'<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+				el.name,
+				el.location_name,
+				el.radius,
+				'<span class="hover operation-eye" d-data=\''+JSON.stringify(postData)+'\'>查看</span>|<span class="hover operation-edit" d-data=\''+JSON.stringify(postData)+'\'>修改</span>|<span class="hover operation-remove">删除</span>'
+			]};
+			arr.push(obj);
+		});
+
+		ttable.init({items:arr});
+	}
+
+	//fn-区域围栏
+	function fn_list_regionfence(items){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+		
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			var postData = {
+				id:el.id,
+				name:el.name,
+				extra:el.extra,
+				gps_lon:JSON.parse(el.points)[0][0],
+				gps_lat:JSON.parse(el.points)[0][1],
+				type:"区域围栏"
+			};
+			var obj = {tds:[
+				'<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+				el.name,
+				'<span class="hover operation-eye" d-data=\''+JSON.stringify(postData)+'\'>查看</span>|<span class="hover operation-remove">删除</span>'
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	//fn-省市围栏
+	function fn_list_province(items){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+		
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			var postData = {
+				id:el.id,
+				extra:el.extra,
+				statistics_codes:el.statistics_codes,
+				type:"省市围栏"
+			};
+			var obj = {tds:[
+				'<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+				el.name,
+				'<span class="hover operation-eye" d-data=\''+JSON.stringify(postData)+'\'>查看</span>|<span class="hover operation-edit" d-data=\''+JSON.stringify(postData)+'\'>修改</span>|<span class="hover operation-remove">删除</span>'
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	//ajax-delectList
+	function ajax_del(ids){
+		var tabAction = $(".dtab .active").html();
+		var url = "/delete_electricfence";
+		if(tabAction === "省市围栏")url = "/delete_regionfence";
+		$.ajax({
+			url:ajax_106+url,
+			type:'post',
+			dataType:'json',
+			data:{ids:ids},
+			traditional: true,//这里设置为true
+		}).then(function(data){
+			if(data.code === "0000"){
+				data_set.page = curr;
+				pageSign = 1;//分页需要的参数
+				data_set = {
+					user_id:info_login.data.id,
+					name_key:"",
+					location_key:"",
+					page:1,
+					interval:10,
+				};
+
+				if($(".dtab .active").html() === "省市围栏"){
+					ttable.init({titles:['checkbox','区域','操作'],items:"当前没有数据"});
+					ajax_search_or_get_user_regionfence(data_set);//ajax-获取省市围栏
+				}else if($(".dtab .active").html() === "区域围栏"){
+					ttable.init({titles:['checkbox','围栏名','操作'],items:"当前没有数据"});
+					data_set.type = 2;
+					ajax_post(data_set);//ajax-获得特定公司的智能硬件列表
+				}else{
+					ttable.init({titles:['checkbox','围栏名','中心点','半径','操作'],items:"当前没有数据"});
+					data_set.type = 1;
+					ajax_post(data_set);//ajax-获得特定公司的智能硬件列表
+				}
+			}
+		});
+	}
+
+	//点击切换路由
+	$(document).off("click","#btn-changeRoute").on("click","#btn-changeRoute",function(){
+		ajax_nav("fence");//路由导航
+	});
+
+	//点击预览
+	$(document).off("click",".hover").off("click",".operation-eye").on("click",".operation-eye",function(){
+		var fenceInfo = $(this).attr("d-data");
+		window.sessionStorage.fenceInfo = fenceInfo;
+		ajax_nav("fence");//路由导航
+	});
+
+	//点击编辑
+	$(document).off("click",".hover").off("click",".operation-edit").on("click",".operation-edit",function(){
+		var fenceInfo = JSON.parse($(this).attr("d-data"));
+		fenceInfo.isEdit = true;
+		window.sessionStorage.fenceInfo = JSON.stringify(fenceInfo);
+		ajax_nav("fence");//路由导航
+	});
+
+	//点击删除
+	$(document).off("click",".hover").off("click",".operation-remove").on("click",".operation-remove",function(){
+		var id = $(this).parent().parent().find("input[type=checkbox]").attr("id");
+		new msgAlert({info:'确定要删除此条信息？删除后无法恢复。'}).on('btnOkClick',function(){
+			ajax_del("["+id+"]");//ajax-delectList
+		});
+	});
+
+	//点击切换选项卡
+	$(document).off("click",".dtab span").on("click",".dtab span",function(){
+		$(".dtab span").removeClass("active");
+		$(this).addClass("active");
+
+		pageSign = 1;//分页需要的参数
+		data_set = {
+			user_id:info_login.data.id,
+			name_key:"",
+			location_key:"",
+			page:1,
+			interval:10,
+		};
+
+		var str = $(this).html();
+		if(str === "省市围栏"){
+			ttable.init({titles:['checkbox','区域','操作'],items:"当前没有数据"});
+			ajax_search_or_get_user_regionfence(data_set);//ajax-获取省市围栏
+		}else if(str === "区域围栏"){
+			ttable.init({titles:['checkbox','围栏名','操作'],items:"当前没有数据"});
+			data_set.type = 2;
+			ajax_post(data_set);//ajax-获得特定公司的智能硬件列表
+		}else{
+			ttable.init({titles:['checkbox','围栏名','中心点','半径','操作'],items:"当前没有数据"});
+			data_set.type = 1;
+			ajax_post(data_set);//ajax-获得特定公司的智能硬件列表
+		}
+	});
+
+	//点击删除
+	$(document).off("click","#remove").on("click","#remove",function(){
+		var arr = ttable.checked();
+		if(arr.length===0){
+			toastr.info('请勾选列表')//提示框
+			return false;
+		}else{
+			new msgAlert({info:'确定要删除此条信息？删除后无法恢复。'}).on('btnOkClick',function(){
+				ajax_del("["+arr.join(",")+"]");//ajax-delectList
+			});
+		}
+	});
+});
+</script>

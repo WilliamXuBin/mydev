@@ -1,0 +1,89 @@
+<style>
+
+	#pageDemo{margin-top:10px;text-align:center;}
+</style>
+<div class="mainBox">
+	<div class="analysis zoom">
+		<table class="ttable" id="ttable"></table>
+		<div id="pageDemo"></div>
+	</div>
+</div>
+<script type="text/javascript">
+	var tt = {
+		elem:$("#ttable"),
+		titles:['序号','车辆牌照','所属机构','车辆状态','操作'],
+		//items:"请选择条件查询",
+	};
+	var ttable = new fn_ttable(tt);
+
+	var pageSign = 1;//分页需要的参数
+	var curr = 1;//分页当前页
+
+	var data_set = {
+		role_id:info_login.data.roleid,
+		extra_id:info_login.data.extraid,
+		page:1,
+		interval:10,
+	};
+
+	//ajax-获得停车统计
+	function ajax_post(set){
+		fn_table_loading();//列表加载中
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/get_running_vehicle_list',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_post,set:set});//初始化分页
+				}
+				setTimeout(fn_list(data.items,"running_car"),1000);
+			}
+		});
+	}
+
+	//fn-停车统计
+	function fn_list(items,sign){
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+		if(sign != "running_car")return;
+
+		var items = fn_format_arr(items);
+		var arr = [];
+
+		items.forEach(function(el,index){
+			var info = {
+				vehicle_id:el.vehicle_id,
+			};
+
+			index++;
+			var obj = {tds:[
+				index,
+				el.licence_plates,
+				el.name,
+				el.state,
+				'<a class="hover" d-data=\''+JSON.stringify(info)+'\'>查看明细</a>',
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	$(function(){
+		ajax_post(data_set);
+
+		//点击进入详情
+		$(document).off("click",".hover").on("click",".hover",function(){
+			var info_carLocation = $(this).attr("d-data");
+			window.sessionStorage.info_carLocation = info_carLocation;
+			ajax_nav('car');//导航路由
+		});
+	});
+</script>

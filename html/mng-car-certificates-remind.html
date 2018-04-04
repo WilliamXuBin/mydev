@@ -1,0 +1,102 @@
+<style>
+    .mngCar{margin:100px 20px;width:auto;}
+</style>
+    
+<div class="mngCar">
+
+    <table class="ttable" id="ttable"></table>
+    <div id="pageDemo"></div>
+</div>
+
+<script type="text/javascript">
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"证件管理",href:"mng-car-certificates"},
+        {name:"到期提醒"},
+    ]);
+
+    var tt = {
+        elem:$("#ttable"),
+        titles:['序号','车牌号码','所属公司','所属车队','行驶证到期时间','开始时间','结束时间','到期情况'],
+        items:"请选择条件查询",
+    };
+    var ttable = new fn_ttable(tt);
+
+    //list
+    function ajax_get_out_of_time_license_info_list(set){
+        $.ajax({
+            url:ajax_106+"/get_out_of_time_license_info_list",
+            type:"post",
+            dataType:"json",
+            data:set
+        }).then(function(data){
+            if(data.code === "0000"){
+                data = data.data;
+                if(pageSign===1){
+                    pageSign++;
+                    new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_get_out_of_time_license_info_list,set:set});//初始化分页
+                }
+
+                fn_list(data.items,"mng_car_repair");
+
+            }
+        });
+    }
+
+    function fn_list(items,sign){
+        if(items === "loading"){
+            ttable.init({items:"加载中……"});
+            return;
+        }
+
+        if(!items || items.length==0){
+            ttable.init({items:[]});
+            return;
+        }
+
+        if(sign != "mng_car_repair")return;
+
+        data_rank = items;
+
+        var items = fn_format_arr(items);
+
+        var arr = [];
+        items.forEach(function(el,index){
+            index++;
+            var hover_data = {
+                id:el.id
+            };
+            var html_operation = '<a class="hover" d-data=\''+JSON.stringify(hover_data)+'\'>查看编辑</a>';
+            var obj = {tds:[
+                index,
+                el.license_plate,
+                el.enterprise_name,
+                el.team_name,
+                el.end_effective_date,
+                el.start_effective_date,
+                el.end_effective_date,
+                el.out_of_time,
+            ]};
+            arr.push(obj);
+        });
+        ttable.init({items:arr});
+    }
+
+    var pageSign = 1;//分页需要的参数
+    var curr = 1;//分页当前页
+    var data_set = {
+        extra_id:info_login.data.extraid,
+        page:1,
+        interval:10,
+    };
+    ajax_get_out_of_time_license_info_list(data_set);
+
+    $(function(){
+        
+    });
+</script>
+
+
+

@@ -1,0 +1,341 @@
+<style>
+  #container{width:100%;height:100%;}
+  .btnInfo{margin:0;}
+  .page-container .main-content{padding:10px}
+
+  .carNav{position:absolute;top:170px;right:10px;z-index:200;width:300px;min-height:300px;max-height:600px;overflow-y:auto;background-color:rgba(20,20,29,0.9);border-radius:3px;padding:30px 25px;}
+  .carNav-list{color:#fff;cursor:pointer;}
+  .carNav-list .plus{background-image:url('img/carNar/plus.png');}
+  .carNav-list .minus{background-image:url('img/carNar/minus.png');}
+  .carNav-list ul{padding:0px 10px 0 30px;}
+  .carNav-list ul li{display:block;}
+  .carNav-list ul li input{opacity:0;}
+  .carNav-list ul li label{line-height:30px;margin:0;background-repeat:no-repeat;background-position:left center;padding-left:8px;background-size:10px;}
+  .carNar-list-check{background-image:url('img/carNar/check.png');}
+  .carNar-list-checked{background-image:url('img/carNar/checked.png');}
+  .carNav-list-title{color:#fff;height:30px;line-height:30px;background-repeat:no-repeat;background-position:left center;padding-left:28px;}
+</style>
+<div id="container" ></div>
+
+<div class="carNav"></div>
+
+<script type="text/javascript">
+  var selected = "";//是否有选中的
+  var markers = [];//标注集合
+  var timer_data_vehicles;//定时器的接口参数
+
+  // //fn-showList  第一层列表
+  // function fn_list(items){
+  //   if(!items || items.length === 0)return false;
+
+  //   var html = '';
+  //   items.forEach(function(el,index){
+  //     html += '<div class="carNav-list plus"><div class="carNav-list-title plus" d-sign="close" d-id="'+el.id+'">'+el.name+'</div><ul></ul></div>';
+  //   });
+  //   $(".carNav").html(html);
+  // }
+
+  // //fn_getCars  第二层列表
+  // function fn_getCars(items,_this){
+  //   var html = '';
+  //   if(!items || items.length === 0){
+  //     html = '<li><a><span class="title">没有车辆</span></a></li>';
+  //     _this.next("ul").html(html);
+  //     return false;
+  //   }
+    
+  //   var html = '';
+  //   items.forEach(function(el,index){
+  //     html += '<li><label for="'+el.id+'" class="carNar-list-check"><input type="checkbox" class="carNar-check" id="'+el.id+'" value="'+el.id+'" /><span>'+el.name+'（'+el.status+'）</span></label></li>';
+  //   });
+
+  //   _this.html(html);
+  // }
+
+  // //ajax-getCars-newInfo   获取定位信息
+  // function ajax_get_vehicle_realtime_info(vehicle_id){
+  //   var info = '';
+  //   $.ajax({
+  //     url:ajax_106+'/get_vehicle_realtime_info',
+  //     type:'post',
+  //     dataType:'json',
+  //     async:false,
+  //     data:{vehicle_id:vehicle_id},
+  //   }).then(function(data){
+  //     if(data.code === "0000"){
+  //       info = data.data;
+  //     }
+  //   });
+  //   return info;
+  // }
+
+  // //ajax-获得所有车辆定位
+  // function ajax_get_locations(){
+  //   $.ajax({
+  //     url:ajax_106+'/get_locations',
+  //     type:'post',
+  //     dataType:'json',
+  //     data:{
+  //       role_id:info_login.data.roleid,
+  //       extra_id:info_login.data.extraid,
+  //     },
+  //   }).then(function(data){
+  //     if(data.code === "0000"){
+  //       fn_loadingCars(data.data);//加载所有车辆定位
+  //     }
+  //   });
+  // }
+
+  // //获取全部组织
+  // function ajax_get_organizations(){
+  //   $.ajax({
+  //     url:'https://api0.youbanganda.com/get_organizations',
+  //     type:'post',
+  //     dataType:'json',
+  //     data:{
+  //       role_id:info_login.data.roleid,
+  //       extra_id:info_login.data.extraid
+  //     },
+  //   }).then(function(data){
+  //     if(data.code === "0000"){
+  //       fn_list(data.data);
+  //     }
+  //   });
+  // }
+
+  // //ajax-getCars-second  获取二级
+  // function ajax_get_organization_vehicles(){
+  //   $.ajax({
+  //     url:'https://api0.youbanganda.com/get_organization_vehicles',
+  //     type:'post',
+  //     dataType:'json',
+  //     data:{
+  //       role_id:info_login.data.roleid,
+  //       first_id:timer_data_vehicles.id,
+  //     },
+  //   }).then(function(data){
+  //     if(data.code === "0000"){
+  //       fn_getCars(data.data,timer_data_vehicles.elem);
+  //     }
+  //   });
+  // }
+
+  // //ajax-getCars-second  获取二级-实时获取信息
+  // function ajax_vehicles_online(){
+  //   $.ajax({
+  //     url:'https://api0.youbanganda.com/get_organization_vehicles',
+  //     type:'post',
+  //     dataType:'json',
+  //     data:{
+  //       role_id:info_login.data.roleid,
+  //       first_id:timer_data_vehicles.id,
+  //     },
+  //   }).then(function(data){
+  //     if(data.code === "0000"){
+  //       var items = data.data;
+  //       items.forEach(function(el,index){
+  //         timer_data_vehicles.elem.find("li").eq(index).find("span").html(el.name+'（'+el.status+'）');
+  //       });
+  //       //timer_data_vehicles.elem
+  //     }
+  //   });
+  // }
+
+  // $(function(){
+  //   ajax_get_organizations();
+
+  //   //点击复选框
+  //   $(document).off("click",".carNar-check").on("click",".carNar-check",function(){
+  //     $(".carNav-list ul li").find("label").attr("class","carNar-list-check");
+  //     $(this).parent().attr("class","carNar-list-checked");
+
+  //     clearTimer();//清除定时器      
+  //     var vehicle_id = JSON.parse($(this).attr("id"));
+  //     fn_infoWindow(vehicle_id);//加载信息载体窗口
+  //     selected = vehicle_id;//是否有选中的
+
+  //     if(!timer_data_vehicles)return;
+  //     timer[1] = setInterval(ajax_vehicles_online,10000);
+  //   });
+
+  //   //点击是否打开
+  //   $(document).off("click",".carNav-list-title").on("click",".carNav-list-title",function(){
+  //     window.clearInterval(timer[1]);
+  //     var _this = $(this);
+  //     var sign = _this.attr("d-sign");
+  //     if(sign === "open"){
+  //       _this.attr("d-sign","close");
+  //       _this.siblings("ul").hide();
+  //       _this.removeClass("minus").addClass("plus");
+  //     }else{
+  //       _this.attr("d-sign","open");
+  //       _this.siblings("ul").show();
+  //       _this.removeClass("plus").addClass("minus");
+  //       var id = $(this).attr("d-id");
+  //       timer_data_vehicles = {
+  //         id:id,
+  //         elem:_this.siblings("ul")
+  //       }
+  //       ajax_get_organization_vehicles();
+  //       timer[1] = setInterval(ajax_vehicles_online,10000);
+  //     }
+  //   });
+  // });
+
+  fn_size_window();//窗体大小
+
+  //创建地图
+  var map = new AMap.Map('container', {
+      resizeEnable: true,
+      zoom:17,
+      viewMode:'3D',//开启3D视图,默认为关闭
+      buildingAnimation:true,//楼块出现是否带动画
+      mapStyle:'amap://styles/b04f07844c76ca4246706310fe3caba3'
+  });
+
+  // map.on("click",function(n){console.log(n.lnglat)});
+
+  // if(window.sessionStorage.infoIndexCity){
+  //   map.setCity(window.sessionStorage.infoIndexCity);
+  //   clear_storage(["infoIndexCity"]);// 删除本地存储
+  // }else if(info_login.data.provincecode){
+  //   map.setCity(info_login.data.provincecode);
+  // }
+
+  // AMap.plugin(['AMap.ToolBar','AMap.Scale','AMap.OverView'],function(){
+  //     //map.addControl(new AMap.ToolBar());
+  //     map.addControl(new AMap.Scale());
+  //     // map.addControl(new AMap.OverView({isOpen:true}));
+  // });
+
+  // //加载所有车辆定位
+  // function fn_loadingCars(postions){
+  //   if(postions && postions.length>0){
+  //     map.clearMap();//移除覆盖物
+  //     postions.forEach(function(el,index){
+  //       if(el.lnglatXY && el.lnglatXY.length>0){
+  //         var info = {
+  //           id:el.id,
+  //           lnglatXY:el.lnglatXY,
+  //           license:el.license,
+  //         };
+  //         //是否有选中的
+  //         if(selected == el.id)info.infoWindow="open";
+  //         fn_marker(info);//show-marker
+  //       }
+  //     });
+  //   }
+  // }
+
+  // if(window.sessionStorage.info_carLocation){
+  //   clearTimer();//清除定时器
+  //   var info_carLocation = JSON.parse(window.sessionStorage.info_carLocation);
+  //   setTimeout(function(){
+  //     fn_infoWindow(info_carLocation.vehicle_id);
+  //     selected = info_carLocation.vehicle_id;//是否有选中的
+  //   },500);
+  // }
+  // ajax_get_locations();
+  // timer[0] = setInterval(ajax_get_locations,3000);
+
+  // //加载标注
+  // function fn_marker(config){
+  //   var _marker = new AMap.Marker({
+  //     extData:{id:config.id},
+  //     position: config.lnglatXY,
+  //     icon:'img/lnglat/red.png',
+  //     label:{
+  //       content:config.license,
+  //         offset: new AMap.Pixel(27, 25)
+  //     },
+  //     title: config.license,
+  //     map: map
+  //   }).off("click",fn_mar).on("click",fn_mar);
+
+  //   function fn_mar(){
+  //     clearTimer();//清除定时器
+  //     fn_infoWindow(config.id);//加载信息载体窗口
+  //     if(!timer_data_vehicles)return;
+  //     timer[1] = setInterval(ajax_vehicles_online,10000);
+  //   }
+
+  //   markers.push(_marker);
+
+  //   if(config.infoWindow === "open")fn_mar();
+  // }
+
+  // //加载信息载体窗口
+  // function fn_infoWindow(id){
+  //   var config = ajax_get_vehicle_realtime_info(id);//ajax-getCars-newInfo
+  //   map.setCenter(config.lnglatXY);//set view center
+  //   var data = {
+  //     vehicle_id:id,
+  //     name:config.license,
+  //   };
+
+  //   var obj = {
+  //     width:44,
+  //     title:"订单号："+config.order,
+  //     items:[
+  //       {title:"位置：",content:config.location},
+  //       {title:"车速：",content:config.speed},
+  //       {title:"状态：",content:config.status},
+  //     ],
+  //     btns:[
+  //       {name:"轨迹查询",id:"btn_trajectory",data:JSON.stringify(data)},
+  //       {name:"驾驶分析",id:"btn_driver",data:JSON.stringify(data)},
+  //       {name:"视频监控",id:"btn_monitor",data:JSON.stringify(data)},
+  //     ]
+  //   };
+  //   var html = ret_infoWindow(obj);
+  //   //信息载体窗口
+  //   var infoWindow = new AMap.InfoWindow({
+  //       isCustom: true,  //使用自定义窗体
+  //       content: html,
+  //       offset: new AMap.Pixel(0,-70)//定位
+  //   });
+  //   infoWindow.open(map, config.lnglatXY);//加载信息载体窗口
+
+  //   // markers.forEach(function(el,index){
+  //   //  if(markers[index].getExtData().id == id){
+  //   //    markers[index].setIcon('img/lnglat/blue.png');
+  //   //  }else{
+  //   //    markers[index].setIcon('img/lnglat/red.png');
+  //   //  }
+  //   // });
+  // }
+
+  // //event-点击关闭信息载体窗口
+  // $(document).off("click",".ibtn-close").on("click",".ibtn-close",function(){
+  //   map.clearInfoWindow();
+  //   selected = "";
+  //   ajax_get_locations();
+  //   timer[0] = setInterval(ajax_get_locations,3000);
+  //   markers.forEach(function(el,index){
+  //     markers[index].setIcon('img/lnglat/red.png');
+  //   });
+  // });
+
+  // //点击按钮
+  // $(document).off("click","#btn_trajectory").on("click","#btn_trajectory",function(){
+  //   var data = $(this).attr("d-data");
+  //   ajax_nav('trajectory');
+  //   window.sessionStorage.info_dataSingle = data;
+  // });
+
+  // //点击按钮
+  // $(document).off("click","#btn_driver").on("click","#btn_driver",function(){
+  //   var data = $(this).attr("d-data");
+  //   ajax_nav('data-single');
+  //   window.sessionStorage.info_dataSingle = data;
+  // });
+
+  // //点击按钮
+  // $(document).off("click","#btn_monitor").on("click","#btn_monitor",function(){
+  //   var data = $(this).attr("d-data");
+  //   ajax_nav('realtime-monitor');
+  //   window.sessionStorage.info_dataSingle = data;
+  // });
+
+  //
+</script>

@@ -1,0 +1,9 @@
+#loadingBegin{
+    background-color: rgba(0,0,0,0.3);
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    z-index: 99999999;
+    margin-top: 0px;
+    top: 0px;
+}

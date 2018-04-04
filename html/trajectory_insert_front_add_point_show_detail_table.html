@@ -1,0 +1,742 @@
+<style>
+	.trajectory-loading{margin-top:15%;}
+	.simpleMarker{}
+	.simpleMarker-title{display:inline-block;line-height:16px;}
+	.simpleMarker-close{display:inline-block;line-height:16px;text-align:center;cursor:pointer;padding:0 5px;font-size:16px;}
+
+	/**加载**/
+	.loading_track{width:100%;height:100%;position:fixed;top:0px;left:0px;z-index:9;background:#eee}
+
+	.ctrlBlock-distance{margin-bottom:10px;display:none;}
+	.ctrlBlock-distance-top{}
+	.ctrlBlock-distance-title{float:left;color:#fff;}
+	.ctrlBlock-distance-more{float:right;color:#fdca00;cursor:pointer;}
+	.ctrlBlock-distance-main{text-align: center;margin:20px 0 10px 0;}
+	.ctrlBlock-distance-main span{
+		font-weight:bold;
+		display: inline-block;
+	    font-size: 30px;
+	    font-family: '微软雅黑';
+	    background-image: -webkit-gradient(linear, 0 0, 0 bottom, from(#fdca00), to(#4cc9ea));
+	    background-image: -moz-gradient(linear, 0 0, 0 bottom, from(#fdca00), to(#4cc9ea));
+	    background-image: -o-gradient(linear, 0 0, 0 bottom, from(#fdca00), to(#4cc9ea));
+	    -webkit-background-clip: text;
+	    -moz-background-clip: text;
+	    -o-background-clip: text;
+	    -webkit-text-fill-color: transparent;
+	    -moz-text-fill-color: transparent;
+	    -o-text-fill-color: transparent;
+	    color:#fdca00;
+	    text-align:center;
+	}
+	.ctrlBlock-main{background-color:rgba(21,21,30,0.88);box-shadow:0px 3px 6.58px 0.42px rgba(0,0,0,0.8);border-radius:3px;padding:15px 12px;}
+	.ctrlBlock-title{color:#fff;border-bottom:1px dashed #4a516a;padding-bottom:12px;margin-bottom:10px;}
+	.ctrlBlock-item{margin-bottom:5px;}
+	.ctrlBlock-item-title{color:#fff;margin-bottom:10px;}
+	.ctrlBlock-item-content{height:40px;position:relative;}
+	.ctrlBlock-item-selectTitle{height:36px;line-height:36px;background-color:#e5e5e5;background-image:url("img/icon/map_downarrow.png");background-repeat:no-repeat;background-size:16px;background-position:right 10px center;border-radius:3px;color:#333;padding:0 10px;cursor:pointer;}
+	.ctrlBlock-item-select{width:100%;height:36px;position:absolute;top:0px;left:0px;opacity:0;}
+	.ctrlBlock-item-text{width:calc(100% - 0px);height:36px;background:#e5e5e5;color:#333;border:none;border-radius:3px;padding:0 10px;}
+	.ctrlBlock-error{color:#dd183d;font-size:12px;margin-bottom:20px;}
+
+	.ctrlBlock-ranging{display:none;}
+	.ctrlBlock-ranging-top{}
+	.ctrlBlock-ranging-title{float:left;color:#fff;height:30px;line-height:30px;}
+	.ctrlBlock-ranging-close{float:right;color:#fff;height:30px;line-height:30px;font-size:24px;cursor:pointer;}
+	.ctrlBlock-ranging-main{}
+	.ctrlBlock-ranging-poit{text-align:center;margin:30px 0;}
+	.ctrlBlock-ranging-poit span{width:60px;height:60px;line-height:60px;text-align:center;font-size:12px;display:inline-block;background:#fdca00;border-radius:50%;box-shadow:0 0 20px rgba(253,200,0,0.4);cursor:pointer;}
+	.ctrlBlock-ranging-info{text-align:center;color:#fff;font-size:12px;}
+	.ctrlBlock-ranging-info span{color:#fff;font-size:12px;}
+</style>
+<div id="container" tabindex="0"></div>
+<div class="ctrlBlock">
+	<div id="default">
+		<div class="ctrlBlock-distance ctrlBlock-bg" id="default_distance">
+			<div class="ctrlBlock-distance-top zoom">
+				<div class="ctrlBlock-distance-title">路线里程</div>
+				<div class="ctrlBlock-distance-more" id="distance_more">路线区间测距 ></div>
+			</div>
+			<div class="ctrlBlock-distance-main">
+				<span id="trajector_distance">--</span>
+				<span style="font-size:12px;">公里</span>
+			</div>
+		</div>
+		<div class="ctrlBlock-main ctrlBlock-bg">
+			<div class="ctrlBlock-title">车辆轨迹查询</div>
+			<div class="ctrlBlock-item">
+				<div class="ctrlBlock-item-title">车辆选择</div>
+				<div class="ctrlBlock-item-content">
+					<div class="ctrlBlock-item-selectTitle"></div>
+					<select class="ctrlBlock-item-select" id="carsList">
+						<option value="">请选择</option>
+					</select>
+				</div>
+			</div>
+			<div class="ctrlBlock-item">
+				<div class="ctrlBlock-item-title">开始时间</div>
+				<div class="ctrlBlock-item-content">
+					<input type="text" class="ctrlBlock-item-text" d-error="请输入开始时间" placeholder="请输入开始时间" id="start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});">
+				</div>
+			</div>
+			<div class="ctrlBlock-item">
+				<div class="ctrlBlock-item-title">结束时间</div>
+				<div class="ctrlBlock-item-content">
+					<input type="text" class="ctrlBlock-item-text" d-error="请输入开始时间" placeholder="请输入结束时间" id="end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});">
+				</div>
+			</div>
+			<div class="ctrlBlock-error"></div>
+			<button class="cbtn" id="btn_trajectory">确定</button>
+		</div>
+	</div>
+	
+	<div class="ctrlBlock-ranging ctrlBlock-bg" id="ranging">
+		<div class="ctrlBlock-ranging-top zoom">
+			<div class="ctrlBlock-ranging-title">路线区间测距</div>
+			<div class="ctrlBlock-ranging-close" id="ranging_close">×</div>
+		</div>
+		<div class="ctrlBlock-ranging-main">
+			<div class="ctrlBlock-ranging-poit">
+				<span id="btn_distance">开始选点</span>
+			</div>
+			<div class="ctrlBlock-ranging-info">区间总里程：<span id="rangingSunKm">0</span>公里</div>
+		</div>
+	</div>
+</div>
+<div class="trajectory-loading"></div>
+<script type="text/javascript">
+	objLoading.elem = $(".trajectory-loading");//加载动画容器
+	var point_err = [];
+
+	var path = [],//路线
+		path_distance = [],//路线-距离
+		path_arr = [],//路线-距离
+		colors = [colors_trajectory_default,"#b94b5b","#ee8754"];
+
+	var point = [];//点的集合
+	var point_click = [];
+
+	$(document).off("click","#btn_trajectory");
+
+	//输入框内容改变
+	$(document).off("change","#carsList").on("change","#carsList",function(){
+		var sel_txt = $(this).find("option:selected").text();
+		$(".ctrlBlock-item-selectTitle").html(sel_txt);
+	});
+
+	//点击区间测速
+	$(document).off("click","#distance_more").on("click","#distance_more",function(){
+		$("#default").hide();
+		$("#ranging").show();
+	});
+
+	//按钮不可用
+	function btn_disable(){
+		//恢复点击
+		$("#btn_trajectory").removeClass("btn-orange").addClass("btn-gray");
+		$("#btn_trajectory").attr("disabled","disabled");
+		$("#btn_trajectory").html("查询中");
+		$("#container").hide();
+		objLoading.show();
+	}
+
+	//按钮可用
+	function btn_defalut(){
+		//恢复点击
+		$("#btn_trajectory").removeClass("btn-gray").addClass("btn-orange");
+		$("#btn_trajectory").removeAttr("disabled");
+		$("#btn_trajectory").html("确定");
+		$("#container").show();
+		objLoading.hide();
+	}
+
+	//ajax-getCars-newInfo   获取定位信息
+	function ajax_get_vehicle_realtime_info(vehicle_id){
+		var info = '';
+		$.ajax({
+			url:ajax_106+'/get_vehicle_realtime_info',
+			type:'post',
+			dataType:'json',
+			async:false,
+			data:{vehicle_id:vehicle_id},
+		}).then(function(data){
+			if(data.code === "0000"){
+				info = data.data;
+			}
+		});
+		return info;
+	}
+
+	//ajax-getCarsList
+	function ajax_get_vehicles(data){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:'json',
+			async:false,
+			data:{
+				role_id:data.role_id,
+				extra_id:data.extra_id,
+			}
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_getCarsList(data.data);//fn-getCarsList
+			}
+		});
+	}
+	var postData = {
+		role_id:info_login.data.roleid,
+		extra_id:info_login.data.extraid,
+	};
+	ajax_get_vehicles(postData);
+
+	//fn-getCarsList
+	function fn_getCarsList(items){
+		if(!items && items.length===0)return false;
+
+		var html = '';
+		items.forEach(function(el,index){
+			html += '<option value='+el.id+'><font><font>'+el.name+'</font></font></option>';
+		});
+		$("#carsList").html(html);
+		//判断是否有默认值
+		if(window.sessionStorage.info_dataSingle){
+			var info_dataSingle = JSON.parse(window.sessionStorage.info_dataSingle);
+			$("#carsList").val(info_dataSingle.vehicle_id);
+			clear_storage(["info_dataSingle"]);
+		}
+		$("#carsList").change();
+	}
+
+	//创建地图
+	var map = new AMap.Map('container', {
+	    resizeEnable: true,
+	    zoom:11,
+	    mapStyle:map_style
+	});
+
+	if(info_login.data.provincecode){
+		map.setCity(info_login.data.provincecode);
+	}
+
+	AMapUI.setDomLibrary($);
+
+	//计算距离
+	function fn_measuringDistance(items){
+		var m = 0;
+		items.forEach(function(el,index){
+			if(index<items.length-2){
+				var lnglat = new AMap.LngLat(el[0],el[1]);
+				var end = [items[index+1][0],items[index+1][1]];
+				
+				m += lnglat.distance(end);//距离
+			}
+		});
+		return (m/1000).toFixed(2);
+	}
+
+	AMapUI.loadUI(['overlay/SimpleInfoWindow','overlay/SimpleMarker'], function(SimpleInfoWindow,SimpleMarker) {
+		AMapUI.load(['ui/misc/PathSimplifier'], function(PathSimplifier) {
+
+		    if (!PathSimplifier.supportCanvas) {
+		        alert('当前环境不支持 Canvas！');
+		        return;
+		    }
+
+		    //启动页面
+		    initPage(PathSimplifier,path);
+		});
+
+		//绘制路线
+		function new_PathSimplifier(PathSimplifier,config){
+			var _renderOptions = {
+	            pathLineStyle: {
+	            	lineWidth:4,
+	                dirArrowStyle: true
+	            },
+	            //renderAllPointsIfNumberBelow:config.point_num,
+	            getPathStyle: function(pathItem, zoom) {
+	                return {
+	                    pathLineStyle: {//默认
+	                        strokeStyle: config.colors,
+	                        lineWidth:4,
+	                        borderWidth:0,
+	                    },
+	                    pathLineSelectedStyle: {//线被选中
+	                    	strokeStyle: config.colors,
+	                    	borderWidth:0,
+	                        lineWidth: 4
+	                    },
+	                    pathLineHoverStyle:{//鼠标经过
+	                    	strokeStyle: config.colors,
+	                    },
+
+	                    startPointStyle:{
+		                	radius:0,
+		                	lineWidth:0,
+		                },
+		                endPointStyle:{
+		                	radius:0,
+		                	lineWidth:0,
+		                },
+	                };
+	            }
+	        }
+
+			var obj = new PathSimplifier({
+		        zIndex: 100,
+		        map: map, //所属的地图实例
+		        getPath: function(pathData, pathIndex) {
+		            //返回轨迹数据中的节点坐标信息，[AMap.LngLat, AMap.LngLat...] 或者 [[lng|number,lat|number],...]
+		            return pathData.path;
+		        },
+		        getHoverTitle: function(pathData, pathIndex, pointIndex) {
+		        	console.log(pathData)
+		        	console.log(pointIndex)
+		            //返回鼠标悬停时显示的信息
+		            if (pointIndex >= 0) {
+		                //鼠标悬停在某个轨迹节点上
+		                //return pathData.name + '，点:' + pointIndex + '/' + pathData.path.length;
+		                if(pathData.path.length<3){
+		                	return "前端补点";
+		                }else{
+		                	return pathData.path[pointIndex][2] + "," +pathData.path[pointIndex][3];
+		                }
+		            }
+		            //鼠标悬停在节点之间的连线上
+		            //return pathData.name + '，点数量' + pathData.path.length;
+		        },
+		        renderOptions: _renderOptions
+		    });
+
+		    return obj;
+		}
+
+		function initPage(PathSimplifier,_thisPath,type) {
+			if(pathSimplifierIns)pathSimplifierIns.clearPathNavigators();
+
+		    //创建组件实例
+		    var pathSimplifierIns = new_PathSimplifier(PathSimplifier,{colors:colors[0],point_num:0});
+		    var Simplifier_distance;
+
+		    //按钮点击
+		    $(document).off("click","#btn_trajectory").on("click","#btn_trajectory",function(){
+		    	var vehicle_id = $("#carsList").val();//获取车辆
+		    	var startTime = $("#start").val();//获取开始时间
+		    	var endTime = $("#end").val();//获取结束
+
+		    	btn_disable();//按钮不可用
+
+		    	if(!startTime)startTime=-1;
+		    	if(!endTime)endTime=-1;
+
+		    	$(".ctrlBlock-error").html("");
+		    	if(startTime === -1){
+		    		$(".ctrlBlock-error").html('请选择开始时间');//提示框
+		    		btn_defalut();//按钮可用
+		    		return false;
+		    	}
+
+		    	if(endTime === -1){
+	    			$(".ctrlBlock-error").html('请选择结束时间');//提示框
+	    			btn_defalut();//按钮可用
+	    			return false;
+		    	}
+
+		    	if(startTime >= endTime){
+		    		$(".ctrlBlock-error").html('开始时间不能大于等结束时间！');//提示框
+		    		btn_defalut();//按钮可用
+		    		return false;
+		    	}
+
+		    	if(!daysMath({start:startTime,end:endTime})){
+		    		btn_defalut();//按钮可用
+		    		return;
+		    	}
+
+		    	var ver = $(".verification");
+		    	var len = ver.length;
+		    	for(var i=0;i<len;i++){
+		    		var tagName = ver.eq(i).tagName;
+		    		var info_err = ver.eq(i).attr("d-error");
+		    		if(tagName === "SELECT" && !ver.eq(i).val()){
+		    			$(".ctrlBlock-error").html(info_err);
+		    			btn_defalut();//按钮可用
+		    			return false;
+		    		}else if(tagName === "INPUT" && !ver.eq(i).val()){
+		    			$(".ctrlBlock-error").html(info_err);
+		    			btn_defalut();//按钮可用
+		    			return false;
+		    		}
+		    	}
+		    	$(".ctrlBlock-error").html("");
+
+		    	var data = {
+					vehicle_id:vehicle_id,
+					start:startTime,
+					end:endTime,
+				};
+				ajax_get_vehicle_trails(data);//ajax-the car position
+		    });
+
+		    //ajax-the car position
+			function ajax_get_vehicle_trails(data){
+				//加载中
+				var html_loading = '<div class="loading_track"><div class="spinner"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div></div>';
+				$(".main-content").append(html_loading);
+				$(".loading_track").width($(".main-content").width()+60);
+
+				$.ajax({
+					url:ajax_106+'/get_vehicle_trails_divide_table',
+					type:'post',
+					dataType:'json',
+					data:{
+						vehicle_id:data.vehicle_id,
+						start:data.start,
+						end:data.end,
+					}
+				}).then(function(data){
+					btn_defalut();//按钮可用
+					$(".loading_track").remove();
+					if(data.code === "0000"){
+						path = data.data;
+						fn_get_vehicle_trails(path);
+					}else{
+						$("#default_distance").hide();//隐藏测距
+						map.clearMap();
+						fn_get_vehicle_trails(false);
+					}
+				});
+
+				$.ajax({
+					url:ajax_106+'/get_vehicle_trails_mileage',
+					type:'post',
+					dataType:'json',
+					data:{
+						vehicle_id:data.vehicle_id,
+						start:data.start,
+						end:data.end,
+					}
+				}).then(function(data){
+					$("#trajector_distance").html(data.data.mileage);
+				});
+			}
+
+			//fn_get_vehicle_trails
+			function fn_get_vehicle_trails(items){
+				if(!items){
+					console.log(items)
+					pathSimplifierIns.setData([]);
+					$(".distance").hide();//隐藏测距
+					btn_defalut();//按钮可用
+					return;
+				}
+
+				var path_add_arr = [];//处理完的路径集合
+				var path_old_arr = [];//默认需要的路径集合
+
+				var route = items.route;//画轨迹
+
+				var n = 0;
+				route.forEach(function(el,index){
+					el.index = index;
+					if(el.isAbnormal){
+						point_err.push(el);
+						n++;
+						path_old_arr.push([""]);//默认需要的路径集合
+						re_abnormal_path(el,n);//异常点的轨迹规划（传起点和终点）
+					}else{
+						path_old_arr.push(el.path);//默认需要的路径集合
+					}
+				});
+
+				btn_disable();//按钮不可用
+
+				function fn_timerOut(){
+					setTimeout(function(){
+						if(path_add_arr.length < n && path_old_arr.length !== 1){
+							//btn_disable();//按钮不可用
+							fn_timerOut();
+							return;
+						}
+						btn_defalut();//按钮可用
+
+						//替换修改后的路径
+					    path_add_arr.forEach(function(el,index){
+					    	path_old_arr[el.index] = el.path;//默认需要的路径集合
+					    });
+
+					    //数据最后重组
+					    var path_result = [];
+						path_old_arr.forEach(function(el,index){
+							path_result = path_result.concat(el);
+						});
+						
+						console.log(path_result)
+						if(path_result.length > 100000){
+							map.clearMap();//移除覆盖物
+							pathSimplifierIns.setData([]);
+							$(".distance").hide();//隐藏测距
+							toastr.info('轨迹时间段过长，请更换时间段查询')//提示框
+							return;
+						}
+
+						var obj_arr = [{name:"",path:path_result}];
+
+						fn_default_path(obj_arr);//画轨迹
+				 	},1000);
+				}
+				fn_timerOut();
+				
+				//画轨迹
+			 	function fn_default_path(path){
+			 		//var m = fn_measuringDistance(path[0].path);//计算距离
+					//$("#trajector_distance").html(m);
+					$("#default_distance").show();//显示测距
+
+					map.clearMap();//移除覆盖物
+					path_arr = path[0].path;
+			    	pathSimplifierIns.setData(path);
+				    fn_SimpleMarker_beginEnd(path_arr);//设置起点和终点
+
+				    console.log(point_err)
+
+				   //  for(var i=0;i<point_err.length;i++){
+				   //  	var conf_start = {
+	      //           		name:"前端补点开始"+i,//名称+
+							// location:point_err[i].start,//经纬度
+							// title:"前端补点"+i,//地标名
+							// bg:"blue",
+	      //           	};
+	      //           	map_marker(conf_start);
+	      //           	var conf_end = {
+	      //           		name:"前端补点结束"+i,//名称+
+							// location:point_err[i].end,//经纬度
+							// title:"前端补点"+i,//地标名
+	      //           	};
+	      //           	map_marker(conf_end);
+				   //  }
+
+			    	if(Simplifier_distance)Simplifier_distance.setData([]);
+			    	pathSimplifierIns.off('pathClick pointClick',fn_path_click);
+			 	}
+
+			 	//返回异常点的轨迹规划（传起点和终点）
+				//	var abnormal_path = re_abnormal_path([121.494304, 31.242775], [121.49984, 31.230372]);
+				function re_abnormal_path(config,a){
+				    var path = [];
+				    
+				    //构造路线导航类
+				    var driving = new AMap.Driving({policy:AMap.DrivingPolicy.LEAST_TIME}); 
+				    // 根据起终点经纬度规划导航路线
+				    driving.search(config.start,config.end,function(status,result){
+				        if(status === 'complete' && result.info === 'OK'){
+				            var steps = result.routes[0].steps;
+				            if(steps.length === 0)return;
+				            steps.forEach(function(el,index){
+				                el.path.forEach(function(el_path,index_path){
+				                	//if(index_path%2==0){
+				                		//console.log(index_path)
+				                		path.push([el_path.lng,el_path.lat]);
+
+				                	//}
+				                });
+				            });
+
+				            //处理完的路径集合
+				            path_add_arr.push({
+				            	path:path,
+				            	index:config.index,
+				            });
+				        }else{
+				            console.log(result);
+				        }
+				    });
+				}	
+			}
+
+			//设置起点和终点
+			function fn_SimpleMarker_beginEnd(items){
+				if(!items || items.length<2)return;
+				fn_SimpleMarker({lnglat:items[0],title:"起点"});//设置标注
+				fn_SimpleMarker({lnglat:items[items.length-1],title:"终点"});//设置标注
+			}
+
+		    //点击测距
+	        $("#btn_distance").click(function(){
+	        	pathSimplifierIns.off('pathClick pointClick',fn_path_click);
+	        	pathSimplifierIns = new_PathSimplifier(PathSimplifier,{colors:colors[0],point_num:1000});
+	        	var obj_arr = [{name:"",path:path_arr}];
+				if($(this).html() === "开始选点"){
+					$(this).html("重新选点");
+					Simplifier_distance = new_PathSimplifier(PathSimplifier,{colors:colors[1],sign:"distance",point_num:0});
+					fn_new_PathSimplifier(obj_arr);//进入测距
+				}else{
+					fn_new_PathSimplifier(obj_arr);//进入测距
+					map.clearMap();//移除覆盖物
+					Simplifier_distance = new_PathSimplifier(PathSimplifier,{colors:colors[1],sign:"distance",point_num:0});
+					fn_SimpleMarker_beginEnd(path_arr);//设置起点和终点
+				}
+
+				$("#rangingSunKm").html("");
+	        });
+
+	        //点击关闭区间测速
+			$(document).off("click","#ranging_close").on("click","#ranging_close",function(){
+				pathSimplifierIns.off('pathClick pointClick',fn_path_click);
+				var obj_arr = [{name:"",path:path_arr}];
+				$("#default").show();
+				$("#ranging").hide();
+
+				$("#btn_distance").html("开始选点");
+				$("#rangingSunKm").html("");
+
+        		map.clearMap();//移除覆盖物
+        		fn_SimpleMarker_beginEnd(path_arr);//设置起点和终点
+        		pathSimplifierIns = new_PathSimplifier(PathSimplifier,{colors:colors[0],point_num:0});
+    			pathSimplifierIns.setData(obj_arr);
+    			if(Simplifier_distance)Simplifier_distance.setData([]);
+			});
+
+			//设置标注
+	    	function fn_SimpleMarker(config){
+	    		if(config.title === "起点" || config.title === "终点"){
+	    			new SimpleMarker({
+				        map: map,
+				        iconStyle:{src:"img/lnglat/red.png"},
+				        label:{
+				        	content: config.title,
+		                    offset: new AMap.Pixel(20, 20)
+				        },
+				        offset: new AMap.Pixel(-10, -10),
+				        position: config.lnglat,
+				    });
+	    		}else{
+	    			new SimpleMarker({
+				        map: map,
+				        iconTheme:"numv2",
+				        label:{
+				        	content: '<div class="simpleMarker zoom"><div class="simpleMarker-title">'+config.title+'</div><div class="simpleMarker-close" d-index="'+config.index+'">×</div></div>',
+		                    offset: new AMap.Pixel(20, 20)
+				        },
+				        iconStyle:{
+				        	src:'img/icon/map_sign.png',
+				        },
+				        iconLabel:{
+				        	innerHTML:config.index,
+				        	style: {
+						        color:'#fff',//设置文字颜色
+						        fontSize:"12px",
+						        marginTop:"3px"
+						    }
+				        },
+				        offset: new AMap.Pixel(-10,-10),
+				        position: config.lnglat,
+				    });
+	    		}
+	    	}
+
+		    //进入测距
+		    function fn_new_PathSimplifier(path_default){
+		    	Simplifier_distance.setData([]);
+		    	pathSimplifierIns.setData(path_default);
+			    point = [];//点的集合
+				point_click = [];
+			    
+			    pathSimplifierIns.off('pathClick pointClick',fn_path_click).on('pathClick pointClick',fn_path_click);
+		    }
+
+		    function fn_path_click(e, info){
+		    	console.log(e)
+		    	if(info.pointIndex){
+		    		point.push(info.pointIndex);
+		    		point_click.push({
+		    			index:info.pointIndex,
+		    			lnglat:path_arr[info.pointIndex]
+		    		});//点的集合-点击的
+		    		fn_marker();//重置标注
+
+		    		if(point.length > 1){
+			    		fn_canvas();//重置多点轨迹
+			    	}
+		    	}
+
+		    	//重置多点轨迹
+		    	function fn_canvas(){
+		    		if(point.length<=1){
+		    			drawPath = [];//绘制线路的数组
+		    			Simplifier_distance.setData([]);
+		    			return;
+		    		}
+		    		var point_slice = point.slice(0);
+		    		point_slice = point_slice.sort(function(a,b){return a-b});
+		    		path_distance = [];
+		    		for(var i=point_slice[0];i<=point_slice[point_slice.length-1];i++){
+		    			path_distance.push(path_arr[i]);
+		    		}
+
+		    		drawPath = [
+		    			{
+		    				name:"",
+		    				path:path_distance
+		    			}
+		    		];
+
+		     		var _zoom = map.getZoom();//获取当前缩放比例
+					var _center = map.getCenter();//获取当前中心点
+		     		Simplifier_distance.setData(drawPath);//画出路线
+		   			map.setZoom(_zoom);//设置当前缩放比例
+					map.setCenter(_center);//设置当前中心点
+		    	}
+
+				//重置标注
+				function fn_marker(){
+					map.clearMap();//移除覆盖物
+		    		fn_SimpleMarker_beginEnd(path_arr);//设置起点和终点
+
+					if(point.length === 0)return;
+
+					var rangingSunKm = 0;//区间总公里
+					point_click.forEach(function(el,index){
+						if(index==0){
+							index++;
+							fn_SimpleMarker({lnglat:el.lnglat,title:"区间点1",index:index});//设置标注
+							$("#rangingSunKm").html(0);//区间总公里
+						}else{
+							var m = 0;//路线-距离
+							var p_1 = point[index-1];
+							var p_2 = point[index];
+							if(point[index-1]>point[index]){
+								p_1 = point[index];
+								p_2 = point[index-1];
+							}
+							for(var i=p_1;i<=p_2;i++){
+								var end = [path_arr[i+1][0],path_arr[i+1][1]];
+								var lnglat = new AMap.LngLat(path_arr[i][0],path_arr[i][1]);
+								m += lnglat.distance(end);//距离
+							}
+							m = (m/1000).toFixed(2);
+							rangingSunKm = (parseFloat(rangingSunKm)+parseFloat(m)).toFixed(2);//区间总公里
+							$("#rangingSunKm").html(rangingSunKm);//区间总公里
+
+							index++;
+							fn_SimpleMarker({lnglat:el.lnglat,title:"区间点"+index+"："+m+"公里",index:index});//设置标注
+						}
+					});
+				}
+
+		    	//点击删除点
+				$(document).off("click",".simpleMarker-close").on("click",".simpleMarker-close",function(){
+					var dindex = parseInt($(this).attr("d-index"))-1;
+					point.splice(dindex,1);
+					point_click.splice(dindex,1);
+
+					fn_marker();//重置标注						
+					fn_canvas();//重置多点轨迹
+				});
+			};
+		}
+	});
+
+	fn_size_window();//窗体大小
+</script>

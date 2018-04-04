@@ -1,0 +1,410 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+	.analysis-main{margin:40px 0;}
+</style>
+
+<div class="analysis zoom">
+	<div id="sel_result"></div>
+
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择速度事件</div>
+			<div class="singleMenu-item-content" id="sel_type" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="sel_vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_start">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_end">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search_vehiclespeed">确定</button></div>
+	</div>
+
+	<div class="analysis-loading"></div>
+	<div class="analysis-main"></div>
+	
+	<div class="moperation zoom">
+		<div class="moperation-left"><span id="moperation_txt" style="display:block;">报表数据</span></div>
+		<div class="moperation-right">
+			<!-- <button class="moperation-btn moperation-btn-icon moperation-btn-rank" id="rank">排序：停车时长 低→高</button> -->
+			<!-- <button class="moperation-btn moperation-btn-icon moperation-btn-export" id="btn_export">导出报表</button> -->
+		</div>
+	</div>
+		
+	<table class="ttable" id="ttable"></table>
+	<div id="pageDemo"></div>
+</div>
+<script type="text/javascript">
+	clearTimer();//清除定时器
+	var sel_type = new fn_tselect({elem:$("#sel_type"),options:[
+			{name:"不限",val:"all"},
+			{name:"30km/h以下",val:"1"},
+			{name:"30-60km/h",val:"2"},
+			{name:"60-80km/h",val:"3"},
+			{name:"80km/h以上",val:"4"},
+		],selected:"all"});
+	var sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:[]});
+
+	var tt = {
+		elem:$("#ttable"),
+		titles:['序号','速度事件','车牌号','所属公司','开始时间','结束时间','开始位置','结束位置'],
+		items:"请选择条件查询",
+	};
+	var ttable = new fn_ttable(tt);
+
+	//配置当前时间
+	function init_data(){
+		$("#menu_start").val(format_date({days:-7}));
+		$("#menu_end").val(format_date({dd:"now"}));
+	}
+	init_data();
+
+	var pageSign = 1;//分页需要的参数
+	var curr = 1;//分页当前页
+
+	//ajax-获取速度报表
+	function ajax_post(set){
+		fn_table_loading();//列表加载中
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/get_vehicle_speed_table_data',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_post,set:set});//初始化分页
+				}
+
+				setTimeout(fn_list(data.items,"vehiclespeed"),1000);
+			}
+		});
+	}
+
+	function fn_list(items,sign){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		if(sign != "vehiclespeed")return;
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			index++;
+			var hover_data = {
+				id:el.id,
+				start:el.start,
+				end:el.end,
+			};
+			//var html_operation = '<a class="hover" d-data=\''+JSON.stringify(hover_data)+'\'>查看明细</a>';
+			var obj = {tds:[
+				index,
+				el.type,
+				el.license,
+				el.vehicle_company,
+				el.start,
+				el.end,
+				el.start_location,
+				el.end_location,
+				//html_operation,
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	//获取车辆列表
+	function ajax_get_vehicles(){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:"json",
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_get_vehicles(data.data);
+			}
+		});
+	}
+	ajax_get_vehicles();//获取车辆列表
+
+	//fn-获取车辆
+	function fn_get_vehicles(items){
+		var options = [{name:"请选择",val:"all"}];
+		items.forEach(function(el,index){
+			options.push({val:el.id,name:el.name});
+		});
+		sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:options,selected:"all",selecteds:["all"],type:"checkbox",result:$("#sel_result")});
+		//$("#search_vehiclespeed").click();
+	}
+
+	//ajax-获取车辆里程数据_柱状图
+	function ajax_get_vehicle_speed_chart_data(set){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_vehicle_speed_chart_data',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				var obj = {
+					title:"时间(h)",
+					infoX:data.infoX,
+					infoY:data.infoY,
+					infoYType:"arr",
+				};
+				fn_chart_speed([obj]);
+			}
+		});
+	}
+
+	// var obj = {
+	// 	title:"速度",
+	// 	infoX:["2018-01-01","2018-01-02","2018-01-03","2018-01-04","2018-01-05","2018-01-06","2018-01-07","2018-01-08","2018-01-09"],
+	// 	infoY:[[863,2708,934,623,2046,3443,4327,1269,885],[814,8214,3095,1960,12833,18222,11618,467,1181],[8881,5685,5658,13144,5446,3936,268,1850],[2,11,3,9,1147,84,82]],
+	// 	infoYType:"arr",
+	// };
+	// fn_chart([obj]);
+
+	function fn_chart_speed(items,type){
+		if(!items || items.length === 0){
+			$(".single-echart-none").show();
+			return;
+		}
+
+		var colors = ["#008df2","#12e6d4","#fdca00","#ff482f"];
+
+		$(".analysis-main").html("");
+		items.forEach(function(el,index){
+			var html = '<div class="single-item"><div class="single-item-title">'+el.title+'</div><div class="single-item-content single-echart-main"><div class="single-echart" id="m'+index+'"></div><div class="single-echart-none">未查询到结果</div><div class="single-echart-legend"><span class="legend-1">30km/h以下</span><span class="legend-2">30-60km/h</span><span class="legend-3">60-80km/h</span><span class="legend-4">80km/h以上</span></div></div></div>';
+			$(".analysis-main").append(html);
+
+			var series_data = [];
+			if(el.infoYType == "arr"){
+				el.infoY.forEach(function(el_infoY,index_infoY){
+					var color;
+					console.log(sel_type.value)
+					if(sel_type.value === "1"){
+						color = colors[0];
+					}else if(sel_type.value === "2"){
+						color = colors[1];
+					}else if(sel_type.value === "3"){
+						color = colors[2];
+					}else if(sel_type.value === "4"){
+						color = colors[3];
+					}else{
+						colors[index_infoY];
+					}
+					series_data.push({
+						name:el_infoY.name,
+			            type:'line',
+			            symbol: 'none',
+			            areaStyle: {
+				            	normal: {
+				            	opacity:0.15,
+				            }
+				        },
+				        itemStyle:{
+				        	normal:{
+				        		color:color
+				        	}
+				        },
+			            data:el_infoY.value
+					});
+				});
+			}
+
+			var myChart = echarts.init(document.getElementById("m"+index));
+
+	        var option = {
+	        	color:colors,
+			    tooltip : {
+			        trigger: 'axis',
+			        axisPointer: {
+			            type: 'cross',
+			            label: {
+			                backgroundColor: '#6a7985'
+			            }
+			        }
+			    },
+			    grid: {
+			        left: '3%',
+			        right: '5%',
+			        bottom: '3%',
+			        top: '5%',
+			        containLabel: true
+			    },
+			    xAxis : [
+			        {
+			            type : 'category',
+			            boundaryGap : false,
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            axisTick:{show:false},
+			            splitLine:{show:false},
+			            data : el.infoX
+			        }
+			    ],
+			    yAxis : [
+			        {
+			            type : 'value',
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            //axisTick:{show:false},
+			            splitLine:{show:false},
+			        }
+			    ],
+			    series:series_data
+			};
+
+	        myChart.setOption(option);
+		});
+		if(type)return;
+		$(".single-echart-none").hide();
+	}
+
+	$(function(){
+		
+		$(document).off("click","#search_vehiclespeed").on("click","#search_vehiclespeed",function(){
+			var type = sel_type.value==="all"?"":sel_type.value;
+			// if(!type){
+			// 	toastr.error('请选择类型');//提示框
+			// 	return;
+			// }
+
+			var vehicle_ids = sel_vehicle.selecteds;
+			if(vehicle_ids.length === 0){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			var menu_start = $("#menu_start").val();
+			var end_start = $("#menu_end").val();
+
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!end_start){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			if(menu_start >= end_start){
+				toastr.error('开始时间不能大于等于结束时间！');//提示框
+				return;
+			}
+
+			pageSign = 1;//分页需要的参数
+			curr = 1;//分页当前页
+
+			var data_set = {
+				type:type,
+				ids:"["+vehicle_ids.join(",")+"]",
+				start:menu_start,
+				end:end_start,
+				page:1,
+				interval:10,
+			};
+
+			fn_list("loading");
+			ajax_post(data_set);//ajax-获取速度报表
+
+			var data_chart = {
+				ids:"["+vehicle_ids.join(",")+"]",
+				start:menu_start,
+				end:end_start,
+				type:type,
+			};
+			ajax_get_vehicle_speed_chart_data(data_chart);
+		});
+
+		//点击进入详情
+		$(document).off("click",".table_link").on("click",".table_link",function(){
+			var info_detail = $(this).attr("d-data");
+			window.sessionStorage.info_detail = info_detail;
+
+			ajax_nav('fenceDetail');//导航路由
+		});
+
+		//导出报表
+		$("#btn_export").click(function(){
+			var menu_start = $("#menu_start").val();
+			var end_start = $("#menu_end").val();
+
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!end_start){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			var type = $("#menu_event_select").val();
+			if(!type){
+				toastr.error('请选择停车事件');//提示框
+				return;
+			}
+
+			var arr = menu_selected.selecteds();
+
+			if(arr.length===0){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			var data_set = {
+				type:type,
+				ids:"["+arr+"]",
+				start:menu_start,
+				end:end_start,
+			};
+
+			window.open('https://performance.whome.cn/generate_vehiclespeed_analysis_report?'+$.param(data_set));
+		});
+
+		//点击进入详情
+		$(document).off("click",".hover").on("click",".hover",function(){
+			var info_detail_speed = $(this).attr("d-data");
+			window.sessionStorage.info_detail_speed = info_detail_speed;
+
+			ajax_nav('analysis_detail_speed');//导航路由
+		});
+	});
+</script>

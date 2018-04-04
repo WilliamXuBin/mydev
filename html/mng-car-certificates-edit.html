@@ -1,0 +1,189 @@
+<style>
+    
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-main"></div>
+    <div class="mngCar-add-btn"><button class="moperation-btn" id="save">确定</button></div>
+</div>
+
+<script type="text/javascript">
+    var info_mcc;
+    var pageTitle = "编辑行驶证";
+    var blockTitle = "行驶证信息";
+    var codeTitle = "证件编号：";
+    var postType = 1;
+    if(window.sessionStorage.info_mngCarCertificates){
+        info_mcc = JSON.parse(window.sessionStorage.info_mngCarCertificates);
+        switch(info_mcc.type){
+            case "driver":
+                pageTitle = "编辑行驶证";
+                blockTitle = "行驶证信息";
+                codeTitle = "证件编号：";
+                postType = 1;
+                break;
+            case "transport":
+                pageTitle = "编辑运输证";
+                blockTitle = "运输证信息";
+                codeTitle = "证件编号：";
+                postType = 2;
+                break;
+            case "policy":
+                pageTitle = "编辑保单";
+                blockTitle = "保单信息";
+                codeTitle = "保单号：";
+                postType = 3;
+                break;
+            case "other":
+                pageTitle = "编辑其他证";
+                blockTitle = "证件信息";
+                codeTitle = "证件编号：";
+                postType = 4;
+                break;
+        }
+    }
+
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"证件管理",href:"mng-car-certificates"},
+        {name:pageTitle},
+    ]);
+    
+    function ajax_get_one_license_info(id){
+        $.ajax({
+            url:ajax_106+"/get_one_license_info",
+            type:"post",
+            dataType:"json",
+            data:{
+                license_id:id
+            }
+        }).then(function(data){
+            if(data.code == "0000"){
+                fn_begin(data.data);
+            }
+        });
+    }
+
+    var menu,
+        sel_ops_license_plate_number;
+    function fn_begin(data){
+        console.log(data)
+        var json = {
+            elem:$(".mngCar-main"),
+            items:[
+                {
+                    title:blockTitle,
+                    items:[
+                        {title:"车牌号码：",type:"select",options:sel_ops_license_plate_number,selected:data.licence_plate,required:true,selected:data.vehicle_info_id,id:"licence_plate"},
+                        {title:codeTitle,required:true,value:data.license_id,disabled:true,id:"license_id"},
+                        {title:"办证时间：",type:"date",required:true,value:data.time_of_certification,id:"time_of_certification"},
+                        {title:"有效日期：",type:"dateStartEnd",placeholder1:"开始时间",placeholder2:"结束时间",required:true,value1:data.start_effective_date,value2:data.end_effective_date,id1:"start_effective_date",id2:"end_effective_date",colspan:3},
+                        {title:"备注信息：",type:"textarea",value:data.information,id:"information",colspan:3},
+                        {title:"证件照片：",type:"upload",srcs:data.photo_url,id:"certification_photo",colspan:3},
+                    ],
+                },
+            ]
+        };
+        menu = new fn_edit_begin(json);
+    }
+    
+    var data_default = {
+        vehicle_info_id:"",
+        vehicle_team_id:"123",
+        time_certification:"2018-10-10",
+        effective_start_date:"2018-10-10",
+        effective_end_date:"2018-10-10",
+        imformation:"imformation",
+    };
+
+    function ajax_get_enterprise_vehicle_license_plates(){
+        $.ajax({
+            url:ajax_106+"/get_enterprise_vehicle_license_plates",
+            type:"post",
+            dataType:"json",
+            data:{
+                extra_id:info_login.data.extraid
+            }
+        }).then(function(data){
+            if(data.code === "0000"){
+                sel_ops_license_plate_number = [{name:"请选择",val:""}];
+                data.data.forEach(function(el,index){
+                    sel_ops_license_plate_number.push({val:el.id,name:el.license_plate});
+                });
+
+                ajax_get_one_license_info(info_mcc.id)
+                //fn_begin(data_default);
+            }
+        });
+    }
+    ajax_get_enterprise_vehicle_license_plates();
+
+    function ajax_update_license_info(set){
+        $.ajax({
+            url:ajax_106+"/update_license_info",
+            type:"post",
+            dataType:"json",
+            data:set,
+        }).then(function(data){
+            if(data.code === "0000"){
+                toastr.success(data.message);
+                ajax_nav("mng-car-certificates");
+            }
+        });
+    }
+
+    $(function(){
+        $(".mngCar-main").on("click",".tselect li",function(){
+            var val = $(this).attr("d-val");
+            var driving_license = "";
+            for(var i=0;i<sel_ops_license_plate_number.length;i++){
+                if(sel_ops_license_plate_number[i].val == val){
+                    driving_license = sel_ops_license_plate_number[i].driving_license;
+                    break;
+                }
+            }
+            $("#license_id").val(driving_license);
+        });
+
+        //event-save
+        $(document).off("click","#save").on("click","#save",function(){
+            var is = menu.is_required();
+            var sel_arr = menu.sel_arr;
+            if(!is)return;
+
+            var start = $("#start_effective_date").val();
+            var end = $("#end_effective_date").val();
+
+            if(start >= end){
+                toastr.error('开始时间不能大于等于结束时间！');//提示框
+                return;
+            }  
+
+            var photo_url = [];
+            $(".mngCar-photo-img").each(function(index,el){
+                var src = $(".mngCar-photo-img img").eq(index).attr("src");
+                if(src)photo_url.push(src)
+            });
+
+            var data_set = {
+                license_info_id:info_mcc.id,
+                license_type:postType,
+                vehicle_info_id:sel_arr[0].value,
+                licence_plate:sel_arr[0].text,
+                license_id:$("#license_id").val(),
+                time_of_certification:$("#time_of_certification").val(),
+                start_effective_date:$("#start_effective_date").val(),
+                end_effective_date:$("#end_effective_date").val(),
+                information:$("#information").val(),
+                photo_url:JSON.stringify(photo_url),
+            };
+            ajax_update_license_info(data_set)
+            console.log(is);
+        });
+    });
+</script>
+
+
+

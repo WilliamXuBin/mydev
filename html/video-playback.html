@@ -1,0 +1,97 @@
+<style>
+	.mainBox{margin:50px auto;width:1200px;}
+	.videoiframe{width:100%;margin:20px 0;}
+	.videoiframe iframe{width:100%;height:500px;background:#fff;}
+</style>
+
+<div class="mainBox">
+	<div class="singleMenu zoom"></div>
+	<div class="videoiframe">
+		
+	</div>
+	
+</div>
+
+<script type="text/javascript">
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"监控管理"},
+		{name:"视频回放"},
+	]);
+
+	var json = {
+		elem:$(".singleMenu"),
+		items:[
+			{name:"选择车辆",id:"vehicle_id",type:"select"},
+			{name:"确定",id:"vehicle_btn",type:"btn"},
+		],
+	}
+	new singleMenu(json);
+
+	var sel_vehicle = new fn_tselect({elem:$("#vehicle_id"),options:[]});
+
+	function get_vehicle_deviceid(){
+		$.ajax({
+			url:ajax_106+'/get_vehicle_deviceid',
+			type:'post',
+			dataType:'json',
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				var options = [{name:"请选择",val:""}];
+				data.data.forEach(function(el,index){
+					options.push({val:el.device_id,name:el.licence_plates});
+				});
+				sel_vehicle = new fn_tselect({elem:$("#vehicle_id"),options:options});
+			}
+		});
+	}
+	get_vehicle_deviceid();
+
+	$(document).off("click","#vehicle_btn").on("click","#vehicle_btn",function(){
+		function PrefixInteger(num, n) {return (Array(n).join(0) + num).slice(-n);}
+		if(!sel_vehicle.value)return;
+		if(sel_vehicle.value == "null"){
+			toastr.error("车辆不在线");
+			$(".videoiframe").html("");
+			return;
+		}
+
+		$.ajax({
+			url:'http://183.62.139.75:8080/StandardApiAction_getDeviceOlStatus.action?jsession=cf6b70a3-c82b-4392-8ab6-bbddce336222&devIdno='+sel_vehicle.value,
+			type:"get",
+			dataType:"json",
+		}).then(function(data){
+			var online = data.onlines[0].online;
+			if(online == 0){
+				toastr.error("车辆不在线");
+				return;
+			}
+			ajax_acc();
+		});
+
+		function ajax_acc(){
+			$.ajax({
+				url:"http://183.62.139.75:8080/StandardApiAction_getDeviceStatus.action?jsession=cf6b70a3-c82b-4392-8ab6-bbddce336222&devIdno="+sel_vehicle.value+"&toMap=2&driver=0",
+				type:"get",
+				dataType:"json",
+			}).then(function(data){
+				var status = data.status[0].s1;
+					status = ((status>>0)|0x1);
+				var acc = status.toString(2);
+				var acc_all = PrefixInteger(acc,32)+"";
+				var acc_1 = acc_all.substring(30,31);
+				if(acc_1 == 0){
+					toastr.error("车辆已熄火");
+				}else{
+					var html = 'http://183.62.139.75:8080/808gps/open/player/PlayBackVideo.html?account=ptcs&password=000000&PlateNum='+sel_vehicle.value+'&lang=zh';
+					$(".videoiframe").html('<iframe src="'+html+'" frameborder="0"></iframe>');
+				}
+			});
+		}
+		
+	});
+</script>

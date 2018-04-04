@@ -1,0 +1,29 @@
+<style>
+#container{width:100%;height:900px;}
+</style>
+<div id="container"></div>
+<script type="text/javascript">
+var map;
+function mapInit(){
+  map = new AMap.Map('container', {
+    resizeEnable: true,
+    zoom:17,
+    viewMode:'3D',//开启3D视图,默认为关闭
+    buildingAnimation:true,//楼块出现是否带动画
+    mapStyle:'amap://styles/b04f07844c76ca4246706310fe3caba3',
+    
+
+    center:[116.333926,39.997245]
+  });
+  
+  map.addControl(new AMap.ControlBar({
+      showZoomBar:false,
+      showControlButton:true,
+      position:{
+        left:'10px',
+        bottom:'10px'
+      }
+  }));
+}
+mapInit()
+</script>

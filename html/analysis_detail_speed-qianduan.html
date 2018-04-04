@@ -1,0 +1,451 @@
+<style>
+	/**加载**/
+	.detailSpeed-loading{margin-top:15%;}
+</style>
+<div id="container" tabindex="0"></div>
+<div class="detailSpeed-loading"></div>
+<script type="text/javascript">
+	objLoading.elem = $(".detailSpeed-loading");//加载动画容器0070bf
+	var colors = ["#008df2","#12e6d4","#fdca00","#ff482f"];
+	var point_err = [];
+
+	$(document).off("click",".ibtn-close");
+
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"分析中心"},
+		{name:"超速统计",href:"vehicleoverspeed-analysis"},
+		{name:"超速统计详情"}
+	]);
+
+	//创建地图
+	var map = new AMap.Map('container', {
+	    resizeEnable: true,
+	    zoom:11,
+	    mapStyle:map_style
+	});
+
+	//加载PathSimplifier，loadUI的路径参数为模块名中 'ui/' 之后的部分 
+	AMapUI.load(['ui/misc/PathSimplifier'], function(PathSimplifier) {
+
+	    if (!PathSimplifier.supportCanvas) {
+	        alert('当前环境不支持 Canvas！');
+	        return;
+	    }
+
+	    //启动页面
+	    initPage(PathSimplifier);
+	});
+
+	//绘制路线
+	function new_PathSimplifier(PathSimplifier,_colors){
+		var _renderOptions = {
+            pathLineStyle: {
+            	lineWidth:4,
+                dirArrowStyle: true
+            },
+            //keyPointTolerance:1,
+            getPathStyle: function(pathItem, zoom) {
+            	console.log(pathItem)
+            	var color = colors[pathItem.pathIndex];
+            	var lineWidth = 4;
+            	if(pathItem.pathData.info){
+            		color=colors[pathItem.pathData.info.type-1];
+            		lineWidth = 6;
+            	}
+                return {
+                    pathLineStyle: {//默认
+                        strokeStyle: color,
+                        lineWidth:lineWidth,
+                        borderWidth:0
+                    },
+                    pathLineSelectedStyle: {//线被选中
+                    	strokeStyle: color,
+                    	
+                    },
+                    pathLineHoverStyle:{//鼠标经过
+                    	strokeStyle: color,
+                    },
+                    startPointStyle:{
+	                	radius:0,
+	                	lineWidth:0,
+	                },
+	                endPointStyle:{
+	                	radius:0,
+	                	lineWidth:0,
+	                },
+                };
+            }
+        }
+
+		var obj = new PathSimplifier({
+	        zIndex: 100,
+	        map: map, //所属的地图实例
+	        getPath: function(pathData, pathIndex) {
+	            //返回轨迹数据中的节点坐标信息，[AMap.LngLat, AMap.LngLat...] 或者 [[lng|number,lat|number],...]
+	            return pathData.path;
+	        },
+	        getHoverTitle: function(pathData, pathIndex, pointIndex) {
+	            //返回鼠标悬停时显示的信息
+	            if (pointIndex >= 0) {
+	                //鼠标悬停在某个轨迹节点上
+	                //return pathData.name + '，点:' + pointIndex + '/' + pathData.path.length;
+	            }
+	            //鼠标悬停在节点之间的连线上
+	            //return pathData.name + '，点数量' + pathData.path.length;
+	        },
+	        renderOptions: _renderOptions
+	    });
+
+	    return obj;
+	}
+
+	function initPage(PathSimplifier) {
+		//创建组件实例
+		var pathSimplifierIns = new_PathSimplifier(PathSimplifier,colors[0]);
+
+		var path_all = [];//全部路径
+		var path_overSpeed = [];//超速路径
+		var path_add_arr = [];
+	    var path_old_arr = [];
+	    //ajax-the car position
+		function ajax_get_vehicle_trails(set){
+			$("#container").hide();
+			objLoading.show();
+			$.ajax({
+				url:ajax_106+'/get_vehicle_trails2',
+				type:'post',
+				dataType:'json',
+				data:{
+					vehicle_id:set.vehicle_id,
+					start:set.start,
+					end:set.end,
+				},
+			}).then(function(data){
+				if(data.code === "0000"){
+					path = data.data;
+					fn_get_vehicle_trails(path);
+				}else{
+					map.clearMap();
+					fn_get_vehicle_trails(false);
+				}
+			});
+		}
+
+		//fn_get_vehicle_trails
+		function fn_get_vehicle_trails(items){
+			if(!items){
+				console.log(items)
+				pathSimplifierIns.setData([]);
+				$(".distance").hide();//隐藏测距
+				btn_defalut();//按钮可用
+				return;
+			}
+
+			var path_add_arr = [];//处理完的路径集合
+			var path_old_arr = [];//默认需要的路径集合
+
+			var route = items.route;//画轨迹
+
+			var n = 0;
+			route.forEach(function(el,index){
+				el.index = index;
+				if(el.isAbnormal){
+					point_err.push(el);
+					n++;
+					path_old_arr.push([""]);//默认需要的路径集合
+					re_abnormal_path(el,n);//异常点的轨迹规划（传起点和终点）
+				}else{
+					path_old_arr.push(el.path);//默认需要的路径集合
+				}
+			});
+
+			function fn_timerOut(){
+				setTimeout(function(){
+					if(path_add_arr.length < n && path_old_arr.length !== 1){
+						fn_timerOut();
+						return;
+					}
+
+					//替换修改后的路径
+				    path_add_arr.forEach(function(el,index){
+				    	path_old_arr[el.index] = el.path;//默认需要的路径集合
+				    });
+
+				    //数据最后重组
+				    var path_result = [];
+					path_old_arr.forEach(function(el,index){
+						path_result = path_result.concat(el);
+					});
+					
+					$("#container").show();
+					objLoading.hide();
+					
+					console.log(path_result)
+					if(path_result.length > 100000){
+						map.clearMap();//移除覆盖物
+						pathSimplifierIns.setData([]);
+						$(".distance").hide();//隐藏测距
+						toastr.info('轨迹时间段过长，请更换时间段查询')//提示框
+						return;
+					}
+
+					path_all = [{name:"",path:path_result}];
+					if(path_overSpeed.length>0){
+						path_overSpeed.forEach(function(el,index){
+							path_all.push(el);
+						});
+					}
+
+					fn_default_path(path_all);//画轨迹
+			 	},1000);
+			}
+			fn_timerOut();
+			
+
+			//画轨迹dd
+		 	function fn_default_path(path){
+		    	pathSimplifierIns.setData(path);
+		    	fn_geocoder(path)
+
+		 	}
+
+		 	//返回异常点的轨迹规划（传起点和终点）
+			//	var abnormal_path = re_abnormal_path([121.494304, 31.242775], [121.49984, 31.230372]);
+			function re_abnormal_path(config,a){
+			    var path = [];
+			    
+			    //构造路线导航类
+			    var driving = new AMap.Driving({policy:AMap.DrivingPolicy.LEAST_TIME}); 
+			    // 根据起终点经纬度规划导航路线
+			    driving.search(config.start,config.end,function(status,result){
+			        if(status === 'complete' && result.info === 'OK'){
+			            var steps = result.routes[0].steps;
+			            if(steps.length === 0)return;
+			            steps.forEach(function(el,index){
+			                el.path.forEach(function(el_path,index_path){
+			                	//if(index_path%2==0){
+			                		//console.log(index_path)
+			                		path.push([el_path.lng,el_path.lat]);
+
+			                	//}
+			                });
+			            });
+
+			            //处理完的路径集合
+			            path_add_arr.push({
+			            	path:path,
+			            	index:config.index,
+			            });
+			        }else{
+			            console.log(result);
+			        }
+			    });
+			}	
+		}
+
+		function fn_geocoder(items){
+			var geocoder = new AMap.Geocoder({
+		        radius: 1000,
+		        extensions: "all"
+		    });
+
+			function is_txt(info){
+	        	for(var i=0;i<roads.length;i++){
+	        		var the_txt = roads[i].name;
+	        		if(the_txt === info.name){
+	        			info.sign = false;
+	        			info.index = i;
+	        			return;
+	        		}
+	        	}
+	        	console.log(info)
+	        	return info;
+		    }
+
+			var roads = [];
+		    items.forEach(function(el,index){
+		    	//if(index>10)return;
+		    	geocoder.getAddress(el, function(status, result) {
+			        if (status === 'complete' && result.info === 'OK') {
+			          	console.log(result)
+			        	var the_road = result.regeocode.roads[0].name;
+
+			        	if(roads.length === 0){
+			        		roads.push({name:the_road,lnglat:[el]});
+			        		return;
+			        	}
+
+			        	var infoI = "none";
+			        	for(var i=0;i<roads.length;i++){
+			        		var the_txt = roads[i].name;
+			        		if(the_road === the_txt){
+			        			infoI = i;
+			        			return;
+			        		}
+			        	}
+
+			        	var obj = is_txt({name:the_road,sign:true});
+			        	if(infoI !== "none"){
+			        		roads[obj.index].lnglat.push(el);
+			        	}else{
+			        		roads.push({name:the_road,lnglat:[el]});
+			        	}
+			        }
+			    });
+		    });
+		}
+		
+		//获取车辆速度地图数据
+		function ajax_get_vehicle_overspeed_map_data(set){
+			$.ajax({
+				url:ajax_106+'/get_vehicle_overspeed_map_data',
+				type:'post',
+				dataType:"json",
+				data:set,
+				async:false,
+			}).then(function(data){
+				if(data.code === "0000"){
+					if(data.data && data.data.length > 0){
+						data.data.forEach(function(el,index){
+							var postData_overSpeed = {
+								vehicle_id:el.vehicle_id,
+								start:el.start,
+								end:el.end,
+								overspeed_id:el.overspeed_id,
+							};
+							ajax_overSpeed_trails(postData_overSpeed)
+						});
+					}
+				}
+			});
+		}
+
+		//获取车辆速度地图数据
+		function ajax_overSpeed_trails(set){
+			$.ajax({
+				url:ajax_106+'/get_vehicle_overspeed_trails',
+				type:'post',
+				dataType:"json",
+				data:set,
+				async:false,
+			}).then(function(data){
+				if(data.code === "0000"){
+					if(data.data && data.data.length > 0){
+						path_overSpeed.push(data.data[0]);
+					}
+				}
+			});
+		}
+
+		if(window.sessionStorage.info_detail){
+			var info_detail = JSON.parse(window.sessionStorage.info_detail);
+
+			var trails_set = {
+				vehicle_id:info_detail.id,
+				start:info_detail.start,
+				end:info_detail.end,
+			};
+			ajax_get_vehicle_overspeed_map_data(trails_set);//获取车辆速度地图数据
+			ajax_get_vehicle_trails(trails_set);
+		}
+
+		pathSimplifierIns.off('pathClick pointClick').on('pathClick pointClick', function(e, info){
+			console.log(e);
+			console.log(info);
+
+			//信息载体窗口
+			function fn_infoWindow(info){
+				var obj = {
+					//width:70,
+					title:"车牌号："+info.license,
+					items:[
+						//{title:"车牌号码：",content:info.license},
+						{title:"时间段：",content:info.time},
+						{title:"超速里程：",content:info.mileage},
+						{title:"超速时长：",content:info.duration},
+					],
+				};
+				var infoWindow = new AMap.InfoWindow({
+				    isCustom: true,  //使用自定义窗体
+				    content: ret_infoWindow(obj),
+				    offset: new AMap.Pixel(5.5,-70)//定位
+				});
+				infoWindow.open(map, info.lngLat);//加载信息载体窗口
+			}
+
+			if(info.pathData.name){
+				map.clearMap();//移除覆盖物
+
+				//fn-绘制标注
+				var _marker = fn_marker({
+					name:info.pathData.name,
+					location:e.originalEvent.lnglat,
+					title:info.pathData.name
+				});
+
+				var info = info.pathData.info;
+				info.lngLat = e.originalEvent.lnglat;
+				fn_infoWindow(info);
+			}
+		});
+
+		//返回异常点的轨迹规划（传起点和终点）
+		//	var abnormal_path = re_abnormal_path([121.494304, 31.242775], [121.49984, 31.230372]);
+		function re_abnormal_path(config){
+		    var path = [];
+		    
+		    //构造路线导航类
+		    var driving = new AMap.Driving({policy:AMap.DrivingPolicy.LEAST_TIME}); 
+		    // 根据起终点经纬度规划导航路线
+		    driving.search(config.start,config.end,function(status,result){
+		        if(status === 'complete' && result.info === 'OK'){
+		            var steps = result.routes[0].steps;
+		            if(steps.length === 0)return;
+		            steps.forEach(function(el,index){
+		                el.path.forEach(function(el_path,index_path){
+		                    path.push([el_path.lng,el_path.lat]);
+		                });
+		            });
+
+		            //处理完的路径集合
+		            path_add_arr.push({
+		            	path:path,
+		            	index:config.index,
+		            });
+		        }else{
+		            console.log(result);
+		        }
+		    });
+		}
+	}
+
+	//fn-绘制标注
+	//config:{
+	//		name:"",//名称
+	//		location:[],//经纬度
+	//		title:"",//地标名
+	//}
+	function fn_marker(config){
+		//配置标注
+    	var marker = new AMap.Marker({
+    		icon:'img/lnglat/red.png',
+    		label: {
+                content: config.name,
+                offset: new AMap.Pixel(15, 30)
+            },
+			position:config.location,
+			title: config.title,
+			map: map,
+		});
+		return marker;
+	}
+
+	$(function(){
+		$(document).on("click",".ibtn-close",function(){
+			map.clearMap();//移除覆盖物
+		});
+	});
+
+	fn_size_window();//窗体大小
+</script>

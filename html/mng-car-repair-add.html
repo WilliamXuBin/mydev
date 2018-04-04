@@ -1,0 +1,164 @@
+<style>
+
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-main"></div>
+    
+    <div class="mngCar-add-btn"><button class="moperation-btn" id="save">确定</button></div>
+</div>
+
+<script type="text/javascript">
+    var menu,
+        sel_arr,
+        sel_license_plate=[{name:"请选择",val:""}],
+        sel_maintenance_type=[{name:"请选择",val:""}];
+
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"车辆维修管理",href:"mng-car-repair"},
+        {name:"添加维修信息"},
+    ]);
+    
+    var tt = {
+        elem:$("#ttable"),
+        titles:['序号','明细项目','送修日期','配件名称','单位','数量','单价（元）','总金额（元）','操作'],
+        items:"请选择条件查询",
+    };
+    var ttable = new fn_ttable(tt);
+
+    function fn_begin(data){
+        console.log(data)
+        var json = {
+            elem:$(".mngCar-main"),
+            items:[
+                {
+                    title:"维修信息",
+                    items:[
+                        {title:"车牌号码：",type:"select",required:true,options:sel_license_plate,selected:data.license_plate,id:"license_plate"},
+                        {title:"送修日期：",required:true,type:"date",value:data.maintenance_date,id:"maintenance_date"},
+                        {title:"维修编号：",value:data.maintenance_number,id:"maintenance_number"},
+                        {title:"维修类型：",options:sel_maintenance_type,selected:data.maintenance_type,type:"select",id:"maintenance_type"},
+                        {title:"维修项目：",value:data.maintenance_program,id:"maintenance_program"},
+                        {title:"送修人员：",value:data.repair_person,id:"repair_person"},
+                        {title:"预计维修天数",value:data.standard_maintenance_mileage,id:"standard_maintenance_mileage"},
+                        {title:"维修厂：",value:data.maintenance_plant,id:"maintenance_plant"},
+                        {title:"维修金额：",value:data.total_maintenance_amount,id:"total_maintenance_amount"},
+                        {title:"维修原因：",value:data.maintenance_description,id:"maintenance_description",colspan:3},
+                    ],
+                },
+            ]
+        };
+        menu = new fn_edit_begin(json);
+    }
+    var postData = {
+        license_plate:"",
+        maintenance_date:"",
+        maintenance_number:"",
+        maintenance_type:"",
+        maintenance_program:"",
+        repair_person:"",
+        standard_maintenance_mileage:"",
+        maintenance_plant:"",
+        total_maintenance_amount:"",
+        maintenance_description:"",
+    };
+    // var postData = {
+    //     license_plate:"沪A12345",
+    //     maintenance_date:"2018-01-01",
+    //     maintenance_number:"12",
+    //     maintenance_type:"发动机大修",
+    //     maintenance_program:"maintenance_program",
+    //     repair_person:"吴彦祖",
+    //     standard_maintenance_mileage:"standard_maintenance_mileage",
+    //     maintenance_plant:"maintenance_plant",
+    //     total_maintenance_amount:"12",
+    //     maintenance_description:"maintenance_description",
+    // };
+    //fn_begin(postData);
+
+    function ajax_get_vehicle_info_pre(){
+        $.ajax({
+            url:'https://api0.youbanganda.com/get_vehicle_info_pre',
+            type:"post",
+            dataType:"json",
+        }).then(function(data){
+            if(data.code === "0000"){
+                var json_sel = data.data;
+
+                //维修类型
+                json_sel.type.repair.forEach(function(el){
+                    sel_maintenance_type.push(el);
+                });
+
+                ajax_get_enterprise_vehicle_license_plates();
+            }
+            
+        });
+    }
+    ajax_get_vehicle_info_pre();
+
+    function ajax_get_enterprise_vehicle_license_plates(){
+        $.ajax({
+            url:ajax_106+"/get_enterprise_vehicle_license_plates",
+            type:"post",
+            dataType:"json",
+            data:{
+                extra_id:info_login.data.extraid
+            }
+        }).then(function(data){
+            if(data.code === "0000"){
+                sel_license_plate = [{name:"请选择",val:""}];
+                data.data.forEach(function(el,index){
+                    sel_license_plate.push({val:el.id,name:el.license_plate});
+                });
+
+                fn_begin(postData);
+            }
+        });
+    }
+
+    function ajax_insert_repair_info(set){
+        $.ajax({
+            url:ajax_106+"/insert_repair_records",
+            type:"post",
+            dataType:"json",
+            data:set,
+        }).then(function(data){
+            if(data.code === "0000"){
+                toastr.success(data.message);
+                ajax_nav("mng-car-repair");
+            }
+        });
+    }
+
+    $(function(){
+
+        //event-save
+        $(document).off("click","#save").on("click","#save",function(){
+            var is = menu.is_required();
+            var sel_arr = menu.sel_arr;
+            if(!is)return;
+            var data_set = {
+                extra_id:info_login.data.extraid,
+                vehicle_info_id:sel_arr[0].value,
+                maintenance_date:$("#maintenance_date").val(),
+                maintenance_number:$("#maintenance_number").val(),
+                maintenance_type:sel_arr[1].value,
+                maintenance_program:$("#maintenance_program").val(),
+                repair_person:$("#repair_person").val(),
+                standard_maintenance_mileage:$("#standard_maintenance_mileage").val(),
+                mileage_value_maintenance:"",
+                maintenance_plant:$("#maintenance_plant").val(),
+                total_maintenance_amount:$("#total_maintenance_amount").val(),
+                maintenance_description:$("#maintenance_description").val(),
+            };
+            ajax_insert_repair_info(data_set);
+        });
+    });
+</script>
+
+
+

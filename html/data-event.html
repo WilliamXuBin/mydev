@@ -1,0 +1,508 @@
+<style>
+#carContent_tab li{cursor:pointer;}
+</style>
+
+<div class="row">		
+	<div class="col-sm-6">
+		<div class="panel panel-default panel-shadow"><!-- Add class "collapsed" to minimize the panel -->
+			<div class="panel-body">
+				<h3 class="panel-title panel-heading" style="text-align:center;"><font><font style="color:#000;">不安全事件管理</font></font></h3>
+			</div>
+			<div class="panel-body">
+				<h3 class="panel-title"><font><font style="color:#000;">选择查询车牌</font></font></h3>
+			</div>
+			
+			<div class="panel-body">
+				<select class="form-control verification" id="plateNumber">
+					<option value=""><font><font>请选择</font></font></option>
+				</select>
+			</div>
+			<div class="panel-body">
+				<h3 class="panel-title"><font><font style="color:#000;">选择时间范围</font></font></h3>
+			</div>
+			<div class="panel-body">
+				<div class="col-sm-6" style="padding-left:0;padding-right:10px;">
+					<input type="text" class="form-control verification" d-error="请输入开始时间" placeholder="请选择开始时间" onclick="laydate.render({elem:this,type:'datetime',format:'yyyy-MM-dd HH:mm',show:true,trigger:'click',max:0});" id="start">
+				</div>
+				<div class="col-sm-6" style="padding-left:10px;padding-right:0">
+					<input type="text" class="form-control verification" d-error="请输入结束时间" placeholder="请选择结束时间" onclick="laydate.render({elem:this,type:'datetime',format:'yyyy-MM-dd HH:mm',show:true,trigger:'click',max:0});" id="end">
+				</div>
+			</div>
+			<div class="panel-body">
+				<button class="btn btn-orange bg-lg" id="btn">确定</button>
+			</div>
+		</div>
+
+		<div class="panel panel-default panel-shadow">
+			<div class="panel-body">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th><font><font>序号</font></font></th>
+							<th><font><font>不安全事件</font></font></th>
+							<th><font><font>次数</font></font></th>
+						</tr>
+					</thead>
+					
+					<tbody id="platetTable"></tbody>
+				</table>
+			</div>
+		</div>
+
+		<ul id="carContent_tab" class="nav nav-tabs nav-tabs-justified">
+			<li class="active" d-tle="speedUp">
+				<a data-toggle="tab">
+					<span class="visible-xs"><i class="fa-home"></i></span>
+					<span class="hidden-xs">急加速</span>
+				</a>
+			</li>
+			<li d-tle="speedCut">
+				<a data-toggle="tab">
+					<span class="visible-xs"><i class="fa-user"></i></span>
+					<span class="hidden-xs">急减速</span>
+				</a>
+			</li>
+			<li d-tle="trun">
+				<a data-toggle="tab">
+					<span class="visible-xs"><i class="fa-envelope-o"></i></span>
+					<span class="hidden-xs">急转弯</span>
+				</a>
+			</li>
+			<li d-tle="overSpeed">
+				<a data-toggle="tab">
+					<span class="visible-xs"><i class="fa-envelope-o"></i></span>
+					<span class="hidden-xs">超速</span>
+				</a>
+			</li>
+			<li d-tle="bump">
+				<a data-toggle="tab">
+					<span class="visible-xs"><i class="fa-cog"></i></span>
+					<span class="hidden-xs">碰撞</span>
+				</a>
+			</li>
+			<li d-tle="fatigue">
+				<a data-toggle="tab">
+					<span class="visible-xs"><i class="fa-cog"></i></span>
+					<span class="hidden-xs">疲劳度</span>
+				</a>
+			</li>
+		</ul>
+		<div class="tab-content">
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th><font><font>序号</font></font></th>
+						<th><font><font>时间</font></font></th>
+						<th><font><font>内容</font></font></th>
+					</tr>
+				</thead>
+				
+				<tbody id="carContent"></tbody>
+			</table>
+		</div>
+
+	</div>
+	
+
+	
+	<div class="col-sm-6">
+		<div class="chart-item-bg">
+			<div class="panel-body">
+				<div class="panel panel-default">
+					<div class="panel-body">	
+						<div id="bar-3" style="height: 400px; width: 100%;"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- <textarea class="form-control" name="" id="test_txt" cols="30" rows="10" style="height:250px;"></textarea>
+		<button class="btn btn-orange" id="test_btn">生成</button> -->
+		<div class="panel panel-default">
+			<div class="panel-body">	
+				<div id="column" style="height: 450px; width: 100%;"></div>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<div id="per" style="height: 440px; width: 100%;"></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	clearTimer();//清除定时器
+	var postData = {
+		vehicle_id:3,
+		start:-1,
+		end:-1,
+	};
+	//总数
+	function fn_total(data){
+		$("#bar-3").dxChart({
+			dataSource: data.items,
+			commonSeriesSettings: {
+				argumentField: "id"
+			},
+			series: data.lines,
+			argumentAxis:{
+				grid:{
+					visible: true
+				}
+			},
+			tooltip:{
+				enabled: true
+			},
+			title: data.title,
+			legend: {
+				verticalAlignment: "bottom",
+				horizontalAlignment: "center"
+			},
+			commonPaneSettings: {
+				border:{
+					visible: true,
+					right: false
+				}
+			}
+		});
+	}
+
+	var colors = [
+		'#BB4848',
+		'#D97048',
+		'#DC5959',
+		'#E07C72',
+		'#CE4934',
+		'#D4517A',
+		'#9D3247',
+		'#C4411C',
+		'#E75D25',
+		'#CD925C',
+		'#BC3C47',
+		'#CA8212',
+		'#E57815'
+	];
+
+	//饼图
+	function column(data){	
+		var arr = [];
+		var arr_title = [];
+		$.each(data.items,function(index,el){
+			arr.push({
+				value:el.val,
+				name:el.region,
+				label:{
+		            normal:{
+		                textStyle:{
+		                    color:colors[index]
+		                }
+		            }
+		        },
+				itemStyle:{
+		            normal:{color:colors[index]}
+		        },
+			});
+			arr_title.push(el.region);
+		});
+
+		// 基于准备好的dom，初始化echarts实例
+		var myChart = echarts.init(document.getElementById('column'));
+
+		// 指定图表的配置项和数据
+		var option = {
+		    title : {
+		        text: data.title,
+		        x:'center'
+		    },
+		    tooltip : {
+		        trigger: 'item',
+		        formatter: "{b} : {c} ({d}%)"
+		        //formatter: "{a} <br/>{b} : {c} ({d}%)"
+		    },
+		    legend: {
+		        orient: 'vertical',
+		        left: 'left',
+		        data: arr_title
+		    },
+		    series : [
+		        {
+		            name: '',
+		            type: 'pie',
+		            radius : '55%',
+		            center: ['50%', '60%'],
+		            data:arr,
+		            itemStyle: {
+		                emphasis: {
+		                    shadowBlur: 10,
+		                    shadowOffsetX: 0,
+		                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+		                }
+		            }
+		        }
+		    ]
+		};
+
+		// 使用刚指定的配置项和数据显示图表。
+		myChart.setOption(option);
+	};
+
+	//车牌不安全事件列表
+	function fn_plate(items){
+		var html = '';
+		if(items && items.length>0){
+			items.forEach(function(el,index){
+				if(!el.num)el.num=0;
+				if(!el.unsafe)el.unsafe="无数据";
+				html += '<tr><td><font><font>'+(index+1)+'</font></font></td><td><font><font>'+el.unsafe+'</font></font></td><td><font><font>'+el.num+'</font></font></td></tr>';
+			});
+		}else{
+			html = '<tr><td colspan=3 style="text-align:center"><font><font>暂无数据</font></font></td></tr>';
+		}
+		$("#platetTable").html(html);
+	}
+
+	//酒规图
+	function fn_per(data){
+		var arr = [];
+		var arr_title = [];
+		$.each(data.items,function(index,el){
+			if(index<3){
+				arr.push({
+					value:el.val,
+					name:el.region,
+					label:{
+			            normal:{
+			                textStyle:{
+			                    color:colors[index]
+			                }
+			            }
+			        },
+					itemStyle:{
+			            normal:{color:colors[index]}
+			        },
+				});
+				arr_title.push(el.region);
+			}
+		});
+
+		// 基于准备好的dom，初始化echarts实例
+		var myChart = echarts.init(document.getElementById('per'));
+
+		// 指定图表的配置项和数据
+		var option = {
+		    title : {
+		        text: data.title2,
+		        x:'center'
+		    },
+		    tooltip : {
+		        trigger: 'item',
+		        formatter: "{b} : {c} ({d}%)"
+		        //formatter: "{a} <br/>{b} : {c} ({d}%)"
+		    },
+		    legend: {
+		        orient: 'vertical',
+		        left: 'left',
+		        data: arr_title
+		    },
+		    series : [
+		        {
+		            name: '',
+		            type: 'pie',
+		            radius : '55%',
+		            center: ['50%', '60%'],
+		            data:arr,
+		            itemStyle: {
+		                emphasis: {
+		                    shadowBlur: 10,
+		                    shadowOffsetX: 0,
+		                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+		                }
+		            }
+		        }
+		    ]
+		};
+
+		// 使用刚指定的配置项和数据显示图表。
+		myChart.setOption(option);
+	}
+
+	//获取车辆列表
+	function fn_get_vehicles(data){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:'json',
+			data:data,
+			async:false,
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_handle(data.data);
+			}
+		});
+
+		function fn_handle(items){
+			if(!items || items.length===0)return false;
+			var html = '';
+			items.forEach(function(el,index){
+				html += '<option value='+el.id+'><font><font>'+el.name+'</font></font></option>';
+			});
+			$("#plateNumber").html(html);
+			$("#plateNumber").val(items[0].id);
+			postData.vehicle_id = items[0].id;
+		}
+	}
+
+	//获取特定车辆的不安全事件数量
+	function ajax_get_vehicle_incident_summary(data){
+		$.ajax({
+			url:ajax_106+'/get_vehicle_incident_summary',
+			type:'post',
+			dataType:'json',
+			data:{
+				vehicle_id:data.vehicle_id,
+				start:data.start,
+				end:data.end,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				fn_per(data.pers);//酒规图
+				column(data.pers)//饼图
+				fn_plate(data.items);//车牌不安全事件列表
+			}
+		});
+	}
+
+	//ajax-获取特定车辆的历史不安全事件
+	function ajax_get_vehicle_history_incident_summary(data){
+		$.ajax({
+			url:ajax_106+'/get_vehicle_history_incident_summary',
+			type:'post',
+			dataType:'json',
+			data:{
+				vehicle_id:data.vehicle_id,
+				start:data.start,
+				end:data.end,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_total(data.data);
+			}
+		});
+	}
+
+	//ajax-getCarContent
+	function ajax_get_vehicle_exception(data){
+		$.ajax({
+			url:ajax_106+'/get_vehicle_exception',
+			type:'post',
+			dataType:'json',
+			data:{
+				vehicle_id:data.vehicle_id,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				var datac = data.data;
+				fn_carContent(datac.speedUp);
+				$("#carContent_tab li").removeClass("active");
+				$("#carContent_tab li").eq(0).addClass("active");
+
+				//click-carContent-tab
+				$("#carContent_tab li").click(function(){
+					var key = $(this).attr("d-tle");
+					fn_carContent(datac[key],key);
+				});
+			}
+		});
+	}
+
+	//fn-carContent
+	function fn_carContent(items,key){
+		var html = '';
+		if(items && items.length>0){
+			fn_format_arr(items)
+			items.forEach(function(el,index){
+				var content = el.content;
+				if(key === "bump"||key ==="fatigue")content='<a href="'+content+'" target="view_window">'+content+'</a>';
+				index++;
+				html += '<tr><td><font><font>'+index+'</font></font></td><td><font><font>'+el.date+'</font></font></td><td><font><font>'+content+'</font></font></td></tr>';
+			});
+		}else{
+			html = '<tr><td colspan=3 style="text-align:center"><font><font>暂无数据</font></font></td></tr>';
+		}
+		$("#carContent").html(html);
+	}
+
+	$(function(){
+		var vehicleData = {
+			role_id:info_login.data.roleid,
+			extra_id:info_login.data.extraid,
+		};
+		fn_get_vehicles(vehicleData);//获取车辆列表
+
+		ajax_get_vehicle_exception(postData)
+		
+		ajax_get_vehicle_incident_summary(postData);//获取特定车辆的不安全事件数量
+
+		ajax_get_vehicle_history_incident_summary(postData);//ajax-获取特定车辆的历史不安全事件
+
+		$("#test_btn").click(function(){
+			var str = $("#test_txt").val();
+			console.log(str)
+			var re = /\s+/g;
+			var s = str.replace(re,",")
+			console.log(s)
+			colors = s.split(",")
+			colors.forEach(function(el,index){
+				colors[index] = "#"+el;
+			})
+			console.log(colors)
+			ajax_get_vehicle_incident_summary(postData);//获取特定车辆的不安全事件数量
+		});
+
+		//click-btn
+		$("#btn").click(function(){
+			var vehicle_id = $("#plateNumber").val();
+			var start = $("#start").val();
+			var end = $("#end").val();
+			if(!vehicle_id){
+				toastr.error('请选择车牌');
+				return false;//提示框
+			}
+
+			if(!start)start = -1;
+			if(!end)end = -1;
+
+	    	if(start===end&&start!==-1){
+	    		toastr.error('开始时间不能大于结束时间！');//提示框
+	    		return false;
+	    	}
+
+	    	if(start === -1){
+	    		if(end !== -1){
+	    			toastr.error('请选择开始时间');//提示框
+	    			return false;
+	    		}
+	    	}
+
+	    	if(end === -1){
+	    		if(start !== -1){
+	    			toastr.error('请选择结束时间');//提示框
+	    			return false;
+	    		}
+	    	}
+
+	    	if(start > end){
+				toastr.error('开始时间不能大于结束时间！');//提示框
+				return;
+			}
+
+			var ajax_data = {
+				vehicle_id:vehicle_id,
+				start:start,
+				end:end,
+			};
+			postData.vehicle_id = vehicle_id;
+			ajax_get_vehicle_exception(postData)
+			ajax_get_vehicle_incident_summary(ajax_data);//获取特定车辆的不安全事件数量
+			ajax_get_vehicle_history_incident_summary(ajax_data);//ajax-获取特定车辆的历史不安全事件
+		});
+	});
+</script>

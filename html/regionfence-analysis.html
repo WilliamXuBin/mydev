@@ -1,0 +1,242 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+	.analysis-main{margin:40px 0;}
+</style>
+
+<div class="analysis zoom">
+	<div id="sel_result"></div>
+
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择围栏</div>
+			<div class="singleMenu-item-content" id="sel_vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_start">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_end">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search_regionfence">确定</button></div>
+	</div>
+
+	<div class="analysis-loading"></div>
+	<div class="analysis-main"></div>
+	
+	<div class="moperation zoom">
+		<div class="moperation-left"><span id="moperation_txt" style="display:block;">报表数据</span></div>
+		<div class="moperation-right">
+			<!-- <button class="moperation-btn moperation-btn-icon moperation-btn-rank" id="rank">排序：超速次数 低→高</button> -->
+			<!-- <button class="moperation-btn moperation-btn-icon moperation-btn-export" id="btn_export">导出报表</button> -->
+		</div>
+	</div>
+		
+	<table class="ttable" id="ttable"></table>
+	<div id="pageDemo"></div>
+</div>
+<script type="text/javascript">
+clearTimer();//清除定时器
+var sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:[]});
+
+var tt = {
+	elem:$("#ttable"),
+	titles:['地域名','开始时间','结束时间','驶入车辆数目','驶出车辆数目'],
+	items:"请选择条件查询",
+};
+var ttable = new fn_ttable(tt);
+
+var data_set = {
+	codes:"",
+	start:"",
+	end:"",
+};
+
+//ajax-获得特定公司的智能硬件列表
+function ajax_post(set){
+	fn_table_loading();//列表加载中
+	$.ajax({
+		url:ajax_106+'/get_regionfence_inout_num',
+		type:'post',
+		dataType:'json',
+		data:set,
+	}).then(function(data){
+		if(data.code === "0000"){
+			data = data.data;
+			setTimeout(fn_list(data,"regionfence"),1000);
+		}
+	});
+}
+
+function fn_list(items,sign){
+	if(items === "loading"){
+		ttable.init({items:"加载中……"});
+		return;
+	}
+	
+	if(!items || items.length==0){
+		ttable.init({items:[]});
+		return;
+	}
+
+	if(sign != "regionfence")return;
+
+	var items = fn_format_arr(items);
+
+	var arr = [];
+	items.forEach(function(el,index){
+		var info_detail_in = {
+			code:el.code,
+			start:el.start,
+			end:el.end,
+			type:"region_in",
+		};
+		var info_detail_out = {
+			code:el.code,
+			start:el.start,
+			end:el.end,
+			type:"region_out",
+		};
+
+		var link_in = el.in_num;
+		var link_out = el.out_num;
+		if(parseInt(el.in_num)>0)link_in = '<a class="hover" d-url="regionfence-in" d-data=\''+JSON.stringify(info_detail_in)+'\'>'+el.in_num+'</a>';
+		if(parseInt(el.out_num)>0)link_out = '<a class="hover" d-url="regionfence-in" d-data=\''+JSON.stringify(info_detail_out)+'\'>'+el.out_num+'</a>';
+		
+		var obj = {tds:[
+			el.region_name,
+			el.start,
+			el.end,
+			link_in,
+			link_out,
+		]};
+		arr.push(obj);
+	});
+	ttable.init({items:arr});
+}
+
+//ajax-获取区域围栏
+function ajax_get_user_regionfence(user_id){
+	$.ajax({
+		url:ajax_106+'/get_user_regionfence',
+		type:'post',
+		dataType:'json',
+		data:{
+			user_id:user_id,
+		},
+		async:false,
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_get_vehicles(data.data);//fn-获取区域围栏
+		}
+	});
+}
+
+//fn-获取区域围栏
+function fn_get_vehicles(items){
+	var options = [{name:"请选择",val:"all"}];
+	items.forEach(function(el,index){
+		options.push({val:el.id,name:el.name,code:el.region_code});
+	});
+	sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:options,type:"checkbox",result:$("#sel_result")});
+}
+
+$(function(){
+	ajax_get_user_regionfence(info_login.data.id)//ajax-获取区域围栏
+
+	$(document).off("click","#search_regionfence").on("click","#search_regionfence",function(){
+		var vehicle_ids = sel_vehicle.selecteds;
+		var vehicle_codes = sel_vehicle.codes;
+		console.log(vehicle_codes)
+		if(vehicle_ids.length === 0){
+			toastr.error('请选择围栏');//提示框
+			return;
+		}
+
+		var menu_start = $("#menu_start").val();
+		var end_start = $("#menu_end").val();
+
+		if(!menu_start){
+			toastr.error('请选择开始时间');//提示框
+			return;
+		}
+
+		if(!end_start){
+			toastr.error('请选择结束时间');//提示框
+			return;
+		}
+
+		if(menu_start >= end_start){
+			toastr.error('开始时间不能大于等于结束时间！');//提示框
+			return;
+		}
+
+		var data_set = {
+			ids:"["+vehicle_ids.join(",")+"]",
+			start:menu_start,
+			end:end_start,
+			role_id:info_login.data.roleid,
+			extra_id:info_login.data.extraid,
+			type:"",
+			page:1,
+			interval:10000,
+		};
+
+		//修改时间
+		$(".ttle-date").html('开始时间：'+menu_start+' 结束时间：'+end_start);
+
+		data_set.codes = "["+vehicle_codes.join(",")+"]";
+		data_set.start = menu_start;
+		data_set.end = end_start;
+
+		fn_list("loading");
+		ajax_post(data_set);//ajax-获得特定公司的智能硬件列表
+	});
+
+	//点击进入详情
+	$(document).off("click",".hover").on("click",".hover",function(){
+		var info_detail = $(this).attr("d-data");
+		window.sessionStorage.info_detail = info_detail;
+		
+		ajax_nav('fenceDetail');//导航路由
+	});
+
+	//导出报表
+	$("#btn_export").click(function(){
+		var menu_start = $("#menu_start").val();
+		var end_start = $("#menu_end").val();
+
+		if(!menu_start){
+			toastr.error('请选择开始时间');//提示框
+			return;
+		}
+
+		if(!end_start){
+			toastr.error('请选择结束时间');//提示框
+			return;
+		}
+
+		var arr = menu_selected.selectedsCode();
+		var arr_name = menu_selected.selectedsText();
+
+		if(arr.length===0){
+			toastr.error('请选择车辆');//提示框
+			return;
+		}
+
+		var data_set = {
+			codes:"["+arr+"]",
+			names:"["+arr_name+"]",
+			start:menu_start,
+			end:end_start,
+		};
+
+		window.open('https://performance.whome.cn/generate_regionfence_inout_report?'+$.param(data_set));
+	});
+});
+</script>

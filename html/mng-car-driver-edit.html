@@ -1,0 +1,167 @@
+<style>
+    
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-main"></div>
+    <div class="mngCar-add-btn"><button class="moperation-btn" id="save">确定</button></div>
+</div>
+
+<script type="text/javascript">
+    var menu,
+        sel_sex = [{name:"请选择",val:""},{name:"男",val:"男"},{name:"女",val:"女"}],
+        sel_arr;
+
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"司机信息",href:"mng-car-driver"},
+        {name:"编辑司机"},
+    ]);
+    
+    function fn_begin(data){
+        console.log(data)
+        var json = {
+            elem:$(".mngCar-main"),
+            items:[
+                {
+                    title:"司机基本信息",
+                    items:[
+                        {title:"姓名：",value:data.driver_name,required:true,id:"driver_name"},
+                        {title:"性别：",type:"select",options:sel_sex,selected:data.gender,required:true,id:"gender"},
+                        {title:"手机号码：",value:data.phone,required:true,id:"phone"},
+                        {title:"身份证号：",value:data.id_number,required:true,id:"id_number"},
+                        {title:"出生日期：",value:data.birthdate,type:"date",required:true,id:"birthdate"},
+                        {title:"籍贯：",value:data.origin,id:"origin"},
+                        {title:"家庭住址：",value:data.address,id:"address",colspan:2},
+                        {title:"备注信息：",value:data.information,type:"textarea",id:"information",colspan:4},
+                    ],
+                },
+                {
+                    title:"驾驶证信息",
+                    items:[
+                        {title:"驾驶证号：",value:data.license_number,required:true,id:"license_number"},
+                        {title:"驾驶证等级：",value:data.license_grade,required:true,id:"license_grade"},
+                        {title:"驾照考取日：",value:data.license_date,type:"date",required:true,id:"license_date"},
+                        {title:"驾驶员从业资格证号：",value:data.driver_qualification,id:"driver_qualification"},
+                        {title:"司机IC卡号：",value:data.ic_card,id:"ic_card"},
+                    ],
+                },
+                {
+                    title:"照片信息",
+                    items:[
+                        {title:"身份证正面照：",type:"upload_fixed",src:data.facade_id_card_photo,id:"facade_id_card_photo"},
+                        {title:"身份证反面照：",type:"upload_fixed",src:data.reverse_id_card_photo,id:"reverse_id_card_photo"},
+                        {title:"驾驶证正面照：",type:"upload_fixed",src:data.license_photo,id:"license_photo"},
+                    ],
+                },
+            ]
+        };
+        menu = new fn_edit_begin(json);
+    }
+
+    var postData = {
+        driver_name:"",
+        gender:"",
+        phone:"",
+        id_number:"",
+        birthdate:"",
+        origin:"",
+        address:"",
+        information:"",
+
+        license_number:"",
+        license_grade:"",
+        license_date:"",
+        driver_qualification:"",
+        ic_card:"",
+    };
+    // var postData = {
+    //     driver_name:"driver_name12",
+    //     gender:"男",
+    //     phone:"18767136756",
+    //     id_number:"32134354354354354",
+    //     birthdate:"2018-01-01",
+    //     origin:"origin",
+    //     address:"driver_qualification",
+    //     information:"ic_card",
+
+    //     license_number:"12121221",
+    //     license_grade:"A",
+    //     license_date:"2018-01-01",
+    //     driver_qualification:"driver_qualification",
+    //     ic_card:"1212",
+    // };
+    //fn_begin(postData);
+
+    function ajax_get_one_driver_info(id){
+        $.ajax({
+            url:ajax_106+"/get_one_driver_info",
+            type:"post",
+            dataType:"json",
+            data:{
+                driver_id:id
+            }
+        }).then(function(data){
+            if(data.code == "0000"){
+                fn_begin(data.data);
+            }
+        });
+    }
+    var info_mngCarDriver;
+    if(window.sessionStorage.info_mngCarDriver){
+        info_mngCarDriver = JSON.parse(window.sessionStorage.info_mngCarDriver);
+        console.log(info_mngCarDriver)
+        ajax_get_one_driver_info(info_mngCarDriver.id);
+    }
+
+    function ajax_update_driver_info(set){
+        $.ajax({
+            url:ajax_106+"/update_driver_info",
+            type:"post",
+            dataType:"json",
+            data:set,
+        }).then(function(data){
+            if(data.code === "0000"){
+                toastr.success(data.message);
+                ajax_nav("mng-car-driver");
+            }
+        });
+    }
+
+    $(function(){
+        //event-save
+        $(document).off("click","#save").on("click","#save",function(){
+            var is = menu.is_required();
+            sel_arr = menu.sel_arr;
+            if(!is)return;
+            var data_set = {
+                driver_id:info_mngCarDriver.id,
+                driver_name:$("#driver_name").val(),
+                gender:sel_arr[0].value,
+                phone:$("#phone").val(),
+                id_number:$("#id_number").val(),
+                birthdate:$("#birthdate").val(),
+                origin:$("#origin").val(),
+                address:$("#address").val(),
+                information:$("#information").val(),
+                
+                license_number:$("#license_number").val(),
+                license_grade:$("#license_grade").val(),
+                license_date:$("#license_date").val(),
+                driver_qualification:$("#driver_qualification").val(),
+                ic_card:$("#ic_card").val(),
+                facade_id_card_photo:$("#facade_id_card_photo").attr("src")?$("#facade_id_card_photo").attr("src"):"",
+                reverse_id_card_photo:$("#reverse_id_card_photo").attr("src")?$("#reverse_id_card_photo").attr("src"):"",
+                license_photo:$("#license_photo").attr("src")?$("#license_photo").attr("src"):"",
+            };
+
+            ajax_update_driver_info(data_set)
+            console.log(is);
+        });
+    });
+</script>
+
+
+

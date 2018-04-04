@@ -1,0 +1,394 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+	.analysis-main{margin:40px 0;}
+</style>
+<div class="analysis zoom">
+	<div id="sel_result"></div>
+
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择停车事件</div>
+			<div class="singleMenu-item-content" id="sel_type" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="sel_vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_start">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_end">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search_vehiclestop">确定</button></div>
+	</div>
+
+	<div class="analysis-loading"></div>
+	<div class="analysis-main"></div>
+	
+	<div class="moperation zoom">
+		<div class="moperation-left"><span id="moperation_txt" style="display:block;">报表数据</span></div>
+		<div class="moperation-right">
+			<button class="moperation-btn moperation-btn-icon moperation-btn-rank" id="rank">排序：停车时长 低→高</button>
+			<!-- <button class="moperation-btn moperation-btn-icon moperation-btn-export" id="btn_export">导出报表</button> -->
+		</div>
+	</div>
+	<table class="ttable" id="ttable"></table>
+	<div id="pageDemo"></div>
+</div>
+<script type="text/javascript">
+	clearTimer();//清除定时器
+	var sel_type = new fn_tselect({elem:$("#sel_type"),options:[
+			{name:"请选择",val:""},
+			{name:"不限",val:"unlimited"},
+			{name:"30-60分钟",val:"1"},
+			{name:"1-3 小时",val:"2"},
+			{name:"3-6小时",val:"3"},
+			{name:">6小时",val:"4"},
+		],selected:""});
+	var sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:[]});
+
+	//配置当前时间
+	function init_data(){
+		$("#menu_start").val(format_date());
+		$("#menu_end").val(format_date({dd:"now"}));
+	}
+	init_data();
+
+	var pageSign = 1;//分页需要的参数
+	var curr = 1;//分页当前页
+	var data_set = {
+		ids:"[4]",
+		start:"",
+		end:"",
+		type:1,
+		page:1,
+		interval:10,
+	};
+
+	var data_rank = [];//排序
+
+	//ajax-获得停车统计
+	function ajax_post_stop(set){
+		fn_table_loading();//列表加载中
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/get_vehicle_stop_table_data',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_post_stop,set:set});//初始化分页
+				}
+
+				setTimeout(fn_list(data.items,"vehiclestop"),1000);
+			}
+		});
+	}
+
+	function fn_list(items,sign){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		if(sign != "vehiclestop")return;
+
+		data_rank = items;
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			index++;
+			var hover_data = {
+				vehicle_id:el.vehicle_id,
+				start:el.start,
+				end:el.end,
+			};
+			var html_operation = '<a class="hover" d-data=\''+JSON.stringify(hover_data)+'\'>查看明细</a>';
+			var obj = {tds:[
+				index,
+				el.license,
+				el.name,
+				el.duration,
+				el.start,
+				el.end,
+				el.poi_name,
+				html_operation,
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	//ajax-获得停车统计-图表
+	function ajax_get_vehicle_stop_chart_data(set){
+		fn_table_loading();//列表加载中
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/get_vehicle_stop_chart_data',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				console.log(data)
+				fn_chart_pie([data]);
+			}
+		});
+	}
+
+	function fn_chart_pie(items,type){
+		if(!items || items.length === 0){
+			$(".single-echart-none").show();
+			return;
+		}
+
+		var colors = ["#007ee0","#12e6d4"];
+
+		$(".analysis-main").html("");
+		console.log(items)
+		items.forEach(function(el,index){
+			var html = '<div class="single-item"><div class="single-item-title">'+el.title+'</div><div class="single-item-content single-echart-main"><div class="single-echart" id="m'+index+'"></div><div class="single-echart-none">未查询到结果</div></div></div>';
+			$(".analysis-main").append(html);
+
+			el.items = el.items.sort(compare('value'));
+
+			var max = el.items?el.items[el.items.length-1].value+10:"";
+
+			var myChart = echarts.init(document.getElementById("m"+index));
+
+	        var option = {
+			    tooltip : {
+			        trigger: 'item',
+			        formatter: "{a} <br/>{b} : {c} %"
+			    },
+
+			    visualMap: {
+			        show: false,
+			        min: -10,
+			        max: el.items[el.items.length-1].value+10,
+			        inRange: {
+			            colorLightness: [0, 1]
+			        }
+			    },
+			    series : [
+			        {
+			            name:'停车统计',
+			            type:'pie',
+			            radius : '80%',
+			            center: ['50%', '50%'],
+			            data:el.items,
+			            roseType: 'radius',
+			            label: {
+			                normal: {
+			                    textStyle: {
+			                        color: '#12e6d4'
+			                    }
+			                }
+			            },
+			            labelLine: {
+			                normal: {
+			                    lineStyle: {
+			                        color: '#12e6d4'
+			                    },
+			                    smooth: 0.2,
+			                    length: 10,
+			                    length2: 20
+			                }
+			            },
+			            itemStyle: {
+			                normal: {
+			                    color: '#12e6d4',
+			                    shadowBlur: 200,
+			                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+			                }
+			            },
+
+			            animationType: 'scale',
+			            animationEasing: 'elasticOut',
+			            animationDelay: function (idx) {
+			                return Math.random() * 200;
+			            }
+			        }
+			    ]
+			};
+
+	        myChart.setOption(option);
+		});
+
+		if(type)return;
+		$(".single-echart-none").hide();
+	}
+
+	//获取车辆列表
+	function ajax_get_vehicles(){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:"json",
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_get_vehicles(data.data);
+			}
+		});
+	}
+	ajax_get_vehicles();//获取车辆列表
+
+	//fn-获取车辆
+	function fn_get_vehicles(items){
+		var options = [{name:"请选择",val:"all"}];
+		items.forEach(function(el,index){
+			options.push({val:el.id,name:el.name});
+		});
+		sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:options,type:"checkbox",result:$("#sel_result")});
+		//$("#search_vehiclestop").click();
+	}
+
+	$(function(){
+		var tt = {
+			elem:$("#ttable"),
+			titles:['序号','车辆牌照','车辆公司','停车时长(分钟)','停车时间','启动时间','停车地址',"操作"],
+			//titles:['序号','所属公司','车牌号码','时间段','停车事件','开始时间','结束时间','停车位置','电子围栏','操作'],
+			items:"请选择条件查询",
+		};
+		ttable = new fn_ttable(tt);
+
+		//点击确定
+		$(document).off("click","#search_vehiclestop").on("click","#search_vehiclestop",function(){
+			var type = sel_type.value;
+			if(!type){
+				toastr.error('请选择类型');//提示框
+				return;
+			}
+
+			var vehicle_ids = sel_vehicle.selecteds;
+			if(vehicle_ids.length === 0){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			var menu_start = $("#menu_start").val();
+			var end_start = $("#menu_end").val();
+
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!end_start){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			if(menu_start >= end_start){
+				toastr.error('开始时间不能大于等于结束时间！');//提示框
+				return;
+			}			
+
+			pageSign = 1;//分页需要的参数
+			curr = 1;//分页当前页
+			var data_set_type = type;
+			if(type=="unlimited")data_set_type="";
+			data_set = {
+				ids:"["+vehicle_ids.join(",")+"]",
+				start:menu_start,
+				end:end_start,
+				type:data_set_type,
+				page:1,
+				interval:10,
+			};
+
+			fn_list("loading");
+			data_rank=[];//排序
+			ajax_post_stop(data_set);//ajax-获得停车统计
+
+			if(type!="unlimited"){
+				$(".analysis-main").html("");
+				return;
+			};
+			data_set_chart = {
+				ids:"["+vehicle_ids.join(",")+"]",
+				start:menu_start,
+				end:end_start,
+			};
+			ajax_get_vehicle_stop_chart_data(data_set_chart);//ajax-获得停车统计-图表
+		});
+
+		//点击进入详情
+		$(document).off("click",".hover").on("click",".hover",function(){
+			var info_detail_stop = $(this).attr("d-data");
+			window.sessionStorage.info_detail_stop = info_detail_stop;
+
+			ajax_nav('analysis_detail_stop');//导航路由
+		});
+
+		//导出报表
+		$("#btn_export").click(function(){
+			var menu_start = $("#menu_start").val();
+			var end_start = $("#menu_end").val();
+
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!end_start){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			var type = $("#menu_event_select").val();
+			if(!type){
+				toastr.error('请选择停车事件');//提示框
+				return;
+			}
+
+			var arr = menu_selected.selecteds();
+
+			if(arr.length===0){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			var data_set = {
+				vehicle_ids:"["+arr+"]",
+				type:type,
+				start:menu_start,
+				end:end_start,
+			};
+
+			window.open('https://performance.whome.cn/generate_vehicle_stop_report?'+$.param(data_set));
+		});
+
+		//排序
+		var rank_sign = "low";
+		$(document).off("click","#rank").on("click","#rank",function(){
+			if(data_rank.length === 0)return;
+			data_rank = data_rank.sort(compare('duration',rank_sign));
+			rank_sign === "low"?rank_sign = "high":rank_sign = "low";
+			fn_list(data_rank,"vehiclestop");
+		});
+	});
+</script>

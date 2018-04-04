@@ -1,0 +1,211 @@
+<!--途中危险场景-->
+<!--输出-->
+<!--window.sessionStorage.info_dangerMap-->
+<!--vehicle_id-->
+<!--start-->
+<!--end-->
+<style>
+	.mainBox{margin-top:50px;}
+	.capacity-table{margin:20px 0 0 0;}
+	.capacity-table-space{display:inline-block;width:100px;}
+</style>
+
+<div class="mainBox">
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search">确定</button></div>
+	</div>
+
+	<div class="capacity-table">
+		<table class="ttable" id="ttable"></table>
+		<div id="pageDemo"></div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	var tt = {
+		elem:$("#ttable"),
+		titles:['序号','车牌号','所属机构','总体安全得分','行驶里程(km)','危险场景次数	','操作'],
+		items:"请选择条件查询",
+	};
+	ttable = new fn_ttable(tt);
+	ttable.init({items:'加载中'});
+
+	var pageSign = 1;//分页需要的参数
+	var curr = 1;//分页当前页
+
+	var ttable,
+		sel_vehicle,
+		menu_start='',
+		menu_end='';
+
+	var data_set = {
+		role_id:info_login.data.roleid,
+		extra_id:info_login.data.extraid,
+		start:"",
+		end:"",
+		vehicle_id:"",
+		page:1,
+		interval:10,
+	};
+
+	//ajax-获得全部车辆
+	function get_vehicles(set){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:'json',
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				var options= [{name:"请选择",val:""}];
+				data.data.forEach(function(el,index){
+					options.push({name:el.name,val:el.id});
+				});
+				sel_vehicle = new fn_tselect({elem:$("#vehicle"),options:options});
+			}
+		});
+	}
+
+	//ajax-获取危险场景列表
+	function get_vehicle_dangerous_scene_summary(set){
+		fn_table_loading();//列表加载中
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/get_vehicle_dangerous_scene_summary4',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:get_vehicle_dangerous_scene_summary,set:set});//初始化分页
+				}
+				setTimeout(fn_list(data.items,"dangerous_scence"),1000);//fn-危险场景列表
+			}else {
+				ttable.init({items:[]});
+			}
+		});
+	}
+	
+	//fn-危险场景列表
+	function fn_list(items,sign){
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		if(sign != "dangerous_scence")return;
+		var items = fn_format_arr(items);
+		var arr = [];
+		items.forEach(function(el,index){
+			var info = {
+				start:el.start,
+				end:el.end,
+				vehicle_id:el.vehicle_id,
+			};
+			index++;
+			type_res='';
+
+			var dangerous_num=el.dangerous_num;
+			var detail='';
+			if(parseInt(el.dangerous_num)>0){
+				dangerous_num='<a class="hover" d-data=\''+JSON.stringify(info)+'\'>'+el.dangerous_num+'</a>';
+				detail='<a class="hover" d-data=\''+JSON.stringify(info)+'\'>查看明细</a>';
+			}
+
+			var obj = {tds:[
+				index,
+				el.licence,
+				el.company_name,
+				el.score,
+				el.mileage,
+				dangerous_num,
+				detail
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	//配置当前时间
+	function init_data(){
+		$("#menu_start").val(format_date());
+		$("#menu_end").val(format_date({dd:"now"}));
+	}
+	init_data();
+
+	$(function(){
+		get_vehicles();//ajax-获得全部车辆
+		init_data();//配置当前时间
+		data_set.start = $("#menu_start").val();
+		data_set.end = $("#menu_end").val();
+		get_vehicle_dangerous_scene_summary(data_set);//ajax-获取危险场景列表
+
+		//点击搜索
+		$(document).off("click","#search").on("click","#search",function(){
+			menu_start = $("#menu_start").val();
+			menu_end = $("#menu_end").val();
+
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!menu_end){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			if(menu_start >= menu_end){
+				toastr.error('开始时间不能大于等于结束时间！');//提示框
+				return;
+			}
+
+			if(!daysMath({start:menu_start,end:menu_end}))return;
+
+			pageSign = 1;//分页需要的参数
+			curr = 1;//分页当前页
+			data_set = {
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+				start:menu_start,
+				end:menu_end,
+				vehicle_id:sel_vehicle.value,
+				page:1,
+				interval:10,
+			};
+			ttable.init({items:'加载中'});
+			get_vehicle_dangerous_scene_summary(data_set);//ajax-获取危险场景列表
+		})
+
+		//点击进入详情
+		$(document).off("click",".hover").on("click",".hover",function(){
+			var info_dangerMap = $(this).attr("d-data");
+			info_dangerMap=$.parseJSON(info_dangerMap);
+			window.sessionStorage.info_dangerMap = JSON.stringify(info_dangerMap);
+
+			ajax_nav('danger-map');//导航路由
+		});
+	});
+</script>

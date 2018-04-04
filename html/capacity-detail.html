@@ -1,0 +1,120 @@
+<style>
+	.mainBox{width:1200px;margin:102px auto 100px auto;overflow:hidden;}
+	.cdetail-title{color:#fff;font-size:18px;position:relative;padding-left:12px;}
+	.cdetail-title:before{content:"\20";width:4px;height:18px;background:#ff9e13;position:absolute;top:4px;left:0px;border-radius:2px;}
+	.cdetail-content{margin:50px 80px;}
+	.cdetail-txt{color:#fff;margin-bottom:10px;}
+	.cdetail-txt span{display:inline-block;color:#fff;margin-right:30px;}
+	.cdetail-box{border:2px solid rgba(60,190,224,0.4);border-radius:3px;padding:30px 30px 25px 30px;}
+	.cdetail-box-left{float:left;width:33.3%;}
+	.cdetail-box-center{float:left;width:33.3%;}
+	.cdetail-box-right{float:left;width:33.3%;}
+
+	.cdetail-box-leftT1,.cdetail-center-t1,.cdetail-center-t2,.cdetail-center-img{color:#fff;text-align:center;}
+	.cdetail-box-leftT1{margin-top:10px;font-size:18px;margin-top:28px;}
+	.cdetail-box-leftT2{color:#38b2d5;text-align:center;margin-top:20px;}
+	.cdetail-center-img{margin:10px 0;}
+	.cdetail-operation{margin:15px 0;}
+	.cdetail-operation-txt1{float:left;color:#fff;margin-top:20px;}
+	.cdetail-operation-txt2{float:left;color:#fdca00;margin:0 40px 0 30px;}
+	.cdetail-operation-txt2 span{font-size:40px;}
+	.cdetail-operation-btn{float:left;background:#fdca00;color:#333333;border:none;border-radius:3px;padding:0px 25px;height:38px;font-size:18px;font-weight:bold;}
+</style>
+
+<div class="mainBox">
+	<div class="cdetail">
+		<div class="cdetail-title">订单详情</div>
+		<div class="cdetail-content">
+			<div class="cdetail-txt" id="order_number"></div>
+			<div class="cdetail-txt">
+				<span id="goods_type"></span>
+				<span id="goods_name"></span>
+				<span id="tonnage"></span>
+				<span id="price"></span>
+			</div>
+			<div class="cdetail-box zoom">
+				<div class="cdetail-box-left">
+					<div class="cdetail-box-leftT1" id="pickup_point">--</div>
+					<div class="cdetail-box-leftT2">提货地点</div>
+				</div>
+				<div class="cdetail-box-center">
+					<div class="cdetail-center-t1" id="vehicle">17.5米/丙烯槽罐车</div>
+					<div class="cdetail-center-img"><img src="img/capacity/arrow_long_default.png" /></div>
+					<div class="cdetail-center-t2" id="deadline">--</div>
+				</div>
+				<div class="cdetail-box-right">
+					<div class="cdetail-box-leftT1" id="clearance_point">--</div>
+					<div class="cdetail-box-leftT2">卸货地点</div>
+				</div>
+			</div>
+			<div class="cdetail-operation zoom">
+				<div style="float:right;">
+					<div class="cdetail-operation-txt1">总运费</div>
+					<div class="cdetail-operation-txt2"><span id="price_btn"></span>元</div>
+					<button class="cdetail-operation-btn" id="btn">抢单</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"业务管理"},
+		{name:"订单中心",href:"capacity"},
+		{name:"订单详情"}
+	]);
+
+	var capacityId = JSON.parse(window.sessionStorage.capacityInfo).id;
+	//获取车主找货详情
+	function ajax_get_car_owners_looking_for_goods_detail(id){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_car_owners_looking_for_goods_detail',
+			type:'post',
+			dataType:'json',
+			data:{id:id}
+		}).then(function(data){
+			if(data.code !== "0000")return;
+			data = data.data;
+
+			$("#order_number").html("订单："+data.order_number);//订单
+			$("#goods_type").html("货品类型："+data.goods_type);//货品类型
+			$("#goods_name").html("货品名称："+data.goods_name);//货品名称
+			$("#tonnage").html("运输吨位："+data.tonnage);//运输吨位
+			$("#price").html("运费："+data.price);//运费
+
+			$("#pickup_point").html(data.pickup_point);//提货地点
+			$("#clearance_point").html(data.clearance_point);//卸货地点
+
+			$("#vehicle").html(data.vehicle_length+data.vehicle_type);//车辆
+			$("#deadline").html(data.deadline);//运输时间
+
+			if(data.price === "价格面议"){
+				$(".cdetail-operation-txt2").html("<span></span>"+data.price);
+			}else{
+				$("#price_btn").html(data.price);//总运费
+			}
+		});
+	}
+	ajax_get_car_owners_looking_for_goods_detail(capacityId);//获取车主找货详情
+
+	//更新车主找货订单状态
+	function ajax_update_car_owners_looking_for_goods_ordered(id){
+		$.ajax({
+			url:'https://api0.youbanganda.com/update_car_owners_looking_for_goods_ordered',
+			type:'post',
+			dataType:'json',
+			data:{id:id}
+		}).then(function(data){
+			if(data.code !== "0000")return;
+			ajax_nav("capacity-sure");
+		});
+	}
+
+	$(function(){
+		$(document).off("click","#btn").on("click","#btn",function(){
+			ajax_update_car_owners_looking_for_goods_ordered(capacityId);//更新车主找货订单状态
+		});
+	});
+</script>

@@ -1,0 +1,133 @@
+<!--不安全事件-->
+<!--输出-->
+<!--window.sessionStorage.info_monitorTrack-->
+<!--vehicle_id-->
+<!--type-->
+<!--start-->
+<!--end-->
+<style>
+	.systemUnsafe{width:1200px;margin:50px auto 0 auto;}
+
+	.su-item{margin-bottom:20px;}
+	.su-item-title{color:#fff;position:relative;padding-left:12px;height:32px;line-height:32px;}
+	.su-item-title:before{position:absolute;top:9px;left:0px;content:"\20";width:4px;height:14px;background:#ff9c18;border-radius:3px;}
+	.su-item-content{padding:0px 12px;}
+	.su-checked{float:left;width:25%;cursor:pointer;}
+	.su-checked-icon{background-repeat:no-repeat;background-position:center;width:12px;height:30px;float:left;margin-right:5px;}
+	.su-checked .default{background-image:url("img/icon/checkbox_white.png");}
+	.su-checked .online{background-image:url("img/icon/checkbox_white_ed.png");}
+	.su-checked-txt{float:left;color:#fff;height:30px;line-height:30px;}
+	.systemUnsafe-button{text-align:center;margin:100px 0;}
+	.systemUnsafe-button button{width:150px;}
+</style>
+
+<div class="systemUnsafe">
+	<div class="systemUnsafe-main"></div>
+	<div class="systemUnsafe-button"><button class="dbtn" id="btn_sys_unsafe">确定</button></div>
+</div>
+
+<script type="text/javascript">
+	var sel_type;
+
+	//ajax-获得全部事件
+	function get_exception_list(){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_all_vehicle_exception_type',
+			type:'post',
+			dataType:'json',
+			data:{user_id:info_login.data.id}
+		}).then(function(data){
+			if(data.code === "0000"){
+				var options = [];
+				data.data.forEach(function(el,index){
+					var obj = {title:el.title,type:el.type,items:[]}
+					for(var i=0;i<el.exception.length;i++){
+						var isChecked = el.exception[i].status=="1"?true:false;
+						obj.items.push({
+							isChecked:isChecked,txt:el.exception[i].name,id:el.exception[i].code
+						});
+					}
+					options.push(obj);
+				});
+				fn_list_systemUnsafe(options);
+			}
+		});
+	}
+	get_exception_list();//ajax-获得全部事件
+
+	function fn_list_systemUnsafe(items){
+		if(!items || items.length === 0){
+			return;
+		}
+
+		var html = "";
+		items.forEach(function(el,index){
+			var html_title = '<div class="su-item-title">'+el.title+'</div>';
+
+			var html_child = "";
+			for(var i=0;i<el.items.length;i++){
+				var cls = el.items[i].isChecked?"online":"default";
+				var obj = {
+					type:el.type,
+					id:el.items[i].id,
+				};
+				html_child += `
+					<div class="su-checked zoom">
+						<div class="su-checked-icon `+cls+`" d-data=\'`+JSON.stringify(obj)+`\'></div>
+						<div class="su-checked-txt">`+el.items[i].txt+`</div>
+					</div>
+				`;
+			}
+
+			html += '<div class="su-item">'+html_title+'<div class="su-item-content zoom">'+html_child+'</div></div>';
+		});
+		$(".systemUnsafe-main").html(html);
+	}
+
+	//ajax-
+	function ajax_save_user_vehicle_exception(set){
+		$.ajax({
+			url:ajax_106+'/save_user_vehicle_exception',
+			type:'post',
+			dataType:'json',
+			data:{
+				user_id:info_login.data.id,
+				option:JSON.stringify(set),
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				toastr.success('保存成功');//提示框
+			}
+		});
+	}
+
+	$(function(){
+		
+		//
+		$(document).off("click",".su-checked").on("click",".su-checked",function(){
+			var _this = $(this);
+			if(_this.find(".su-checked-icon").hasClass("default")){
+				_this.find(".su-checked-icon").removeClass("default").addClass("online");
+			}else{
+				_this.find(".su-checked-icon").removeClass("online").addClass("default");
+			}
+		});
+
+		//click-ok
+		$("#btn_sys_unsafe").click(function(){
+			var arr = [];
+			var _suChecked = $(".su-checked");
+			_suChecked.each(function(index,el){
+				if(!_suChecked.eq(index).find(".su-checked-icon").hasClass("online"))return;
+				var data = _suChecked.eq(index).find(".online").attr("d-data");
+				data = JSON.parse(data);
+				arr.push(data.id);
+				
+				
+			});
+			console.log(arr)
+			ajax_save_user_vehicle_exception(arr)
+		});
+	});
+	
+</script>

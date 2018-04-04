@@ -1,0 +1,197 @@
+<style>
+    .userBlock{width:400px;margin:200px auto;}
+    .userBlock-item{margin-bottom:10px;}
+    .userBlock-item-title{width:90px;height:38px;line-height:38px;float:left;}
+    .userBlock-item-content{width:300px;height:38px;line-height:38px;float:right;border-bottom:1px solid rgba(255,255,255,0.1);}
+    .userBlock-item-text{width:300px;height:38px;border:none;background:none;color:#fff;padding:0 20px;}
+    .userBlock-default .userBlock-item-title,.userBlock-default .userBlock-item-content,.userBlock-default .userBlock-item-text{color:#fff;}
+    .userBlock-disable .userBlock-item-title,.userBlock-disable .userBlock-item-content,.userBlock-disable .userBlock-item-text{color:#8c8c8c;}
+
+    .tselect-title{background:none;}
+</style>
+
+<div class="userBlock">
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">设备号：</div>
+        <div class="userBlock-item-content"><input type="text" class="userBlock-item-text" id="equipNum" d-error="请输入设备号" disabled="disabled" /></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">硬件版本：</div>
+        <div class="userBlock-item-content"><input type="text" class="userBlock-item-text urequired" id="version" d-error="请输入硬件版本" /></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default" id="">
+        <div class="userBlock-item-title">公司：</div>
+        <div class="userBlock-item-content"><div id="sel_company" class="urequired-sel" d-error="请选择公司"></div></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default" id="">
+        <div class="userBlock-item-title"></div>
+        <div class="userBlock-item-content"><div id="sel_enterprise_companys" class="urequired-sel" d-error="请选择公司"></div></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">车牌号：</div>
+        <div class="userBlock-item-content"><div id="sel_licence" class="urequired-sel" d-error="请选择车牌号"></div></div>
+    </div>
+    
+    <div class="userBlock-item" style="margin-top:50px;">
+        <button class="dbtn" id="btn_equip_edit">确定</button>
+    </div>
+</div>
+    
+<script type="text/javascript">
+    var sel_company,
+        sel_enterprise_companys,
+        sel_licence;
+
+    var company_id_data = "";//分公司ID
+    var id = window.localStorage.id;
+
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"设备管理",href:"equipment"},
+        {name:"编辑设备"},
+    ]);
+
+    //ajax-get all sum conpamys  获取所有总公司
+    function ajax_get_all_enterprises(){
+        $.ajax({
+            url:ajax_106+'/get_all_enterprises',
+            type:'post',
+            dataType:'json',
+            async:false,
+        }).then(function(data){
+            if(data.code === "0000"){
+                var items = data.data;
+                var options = [{name:"请选择",val:""}];
+                items.forEach(function(el,index){
+                    options.push({name:el.name,val:el.id});
+                });
+                sel_company = new fn_tselect({elem:$("#sel_company"),options:options});
+                sel_company.on("change",function(){
+                    if(!sel_company.value)return;
+                    ajax_get_enterprise_companys(sel_company.value);//ajax-获取特定总公司下所有分公司
+                });
+            }
+        });
+    }
+    
+    //ajax-getSingleInformation
+    function ajax_get_specified_hardwares(id){
+        $.ajax({
+            url:ajax_106+'/get_specified_hardwares',
+            type:'post',
+            dataType:'json',
+            data:{id:id},
+            async:false,
+        }).then(function(data){
+            if(data.code === "0000"){
+                fn_information(data.data);
+            }
+        });
+    }
+
+    function fn_information(data){
+        company_id_data = data.company_id;
+        
+        $("#equipNum").val(data.device_id);//获取设备号
+        $("#version").val(data.version);//获取硬件版本
+
+        sel_licence.selected(data.vehicle_id);//获取车牌号
+        sel_company.selected(data.enterprise_id);//获取公司ID
+        sel_company.change();//修改了总公司
+
+    }
+
+    //ajax-获取特定总公司下所有分公司
+    function ajax_get_enterprise_companys(extra_id){
+        $.ajax({
+            url:ajax_106+'/get_enterprise_companys',
+            type:'post',
+            dataType:'json',
+            data:{extra_id:extra_id},
+            async:false,
+        }).then(function(data){
+            if(data.code === "0000"){
+                var items = data.data;
+                var options = [{name:"请选择",val:""}];
+                items.forEach(function(el,index){
+                    options.push({name:el.name,val:el.id});
+                });
+                sel_enterprise_companys = new fn_tselect({elem:$("#sel_enterprise_companys"),options:options});
+                if(company_id_data)sel_enterprise_companys.selected(company_id_data);
+            }
+        });
+    }
+
+    //ajax-updata
+    function ajax_update_hardware(data){
+        $.ajax({
+            url:ajax_106+'/update_hardware',
+            type:'post',
+            dataType:'json',
+            data:data,
+        }).then(function(data){
+            if(data.code === "0000"){
+                new msgAlert({info:data.message}).on('btnOkClick',function(){
+                    ajax_nav('equipment');
+                });
+            }
+        });
+    }
+
+    //ajax-获取所有车辆
+    function ajax_get_all_vehicles(){
+        $.ajax({
+            url:ajax_106+'/get_all_vehicles',
+            type:'post',
+            dataType:'json',
+            async:false,
+        }).then(function(data){
+            if(data.code === "0000"){
+                var items = data.data;
+                var options = [{name:"请选择",val:""}];
+                items.forEach(function(el,index){
+                    options.push({name:el.name,val:el.id});
+                });
+                sel_licence = new fn_tselect({elem:$("#sel_licence"),options:options});
+            }
+        });
+    }
+
+    $(function(){
+        ajax_get_all_enterprises();//ajax-get all sum conpamys  获取所有总公司
+        ajax_get_all_vehicles();//ajax-获取所有车辆
+        ajax_get_specified_hardwares(id);//ajax-getSingleInformation
+
+        //按钮点击
+        $(document).off("click","#btn_equip_edit").on("click","#btn_equip_edit",function(){
+            if(!form_table())return;
+
+            //信息验证通过之后获取到表单内填写的所有内容            
+            var version = $("#version").val();
+            var palteName_id = sel_licence.value;
+            var palteName_name = sel_licence.text;
+            var enterprise_id = sel_company.value;//获取总公司名ID
+            var enterprise_name = sel_company.text;//获取总公司名
+            var company_id = sel_enterprise_companys.value;//获取分公司ID
+            var company_name = sel_enterprise_companys.text;//获取分公司名
+
+            var postData = {
+                hardware_id:id,
+                version:version,//硬件版本
+                company_id:company_id,//公司ID
+                updateperson:info_login.data.realname,//修改人
+                company_name:company_name,//公司名
+                vehicle_id:palteName_id,//车牌Id
+                vehicle_licence:palteName_name,//车牌号
+                enterprise_id:enterprise_id,//总公司ID
+                enterprise_name:enterprise_name,//总公司名
+            };
+            ajax_update_hardware(postData);
+        });
+    });
+</script>
+
+
+
+

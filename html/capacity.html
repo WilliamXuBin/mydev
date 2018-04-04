@@ -1,0 +1,283 @@
+<style>	
+	.capacity-tab{border:2px solid rgba(60,190,224,0.4);margin:50px 0 30px 0;}
+	.capacity-tab-box{display:block;float:left;width:50%;height:70px;line-height:70px;text-align:center;}
+	.capacity-tab-box span{color:#fff;height:70px;display:inline-block;background-position:left center;padding-left:40px;background-repeat:no-repeat;}
+	.capacity-tab-box .icon1{background-image:url('img/capacity/icon1.png');}
+	.capacity-tab-box .icon2{background-image:url('img/capacity/icon2.png');}
+	.capacity-tab .active{background-color:rgba(60,190,224,0.4);}
+
+	.capacity-menu{border:2px solid rgba(60,190,224,0.4);margin:0px 0 20px 0;padding:15px;}
+	.capacity-menu-left{float:left;}
+	.capacity-menu-center{float:left;}
+	.capacity-menu-right{float:left;margin-left:45px;}
+
+	.capacity-menu-txt{color:#fff;float:left;line-height:38px;margin:0 10px 0 20px;}
+	.capacity-menu-box{float:left;}
+
+	.capacity-menu-line{float:left;width:30px;height:2px;background:#fff;margin:17px 0px 0px 20px;}
+
+	.capacity-menu-center ul{float:left;border-radius:3px;overflow:hidden;}
+	.capacity-menu-center ul li{width:90px;float:left;height:38px;line-height:38px;text-align:center;color:#fff;background:#1b2f3d;border-right:1px solid #304554;cursor:pointer;}
+	.capacity-menu-center ul li:last-child{border:none;}
+	.capacity-menu-center .active{background:#35aacb;}
+
+	.tbtn{height:38px;padding:0 15px;color:#fff;border:none;border-radius:3px;background:#3cbee0;}
+	.tbtn:hover{background:#0F809E;}
+
+	.capacity-table{margin:20px 0 0 0;}
+	.capacity-table-space{display:inline-block;width:100px;}
+
+	.capacityDetail{color:#3cbee0;cursor:pointer;}
+	.capacityDetail:hover{color:#3cbee0;}
+</style>
+
+<div class="mainBox">
+	<div class="capacity-tab zoom">
+		<div class="capacity-tab-box active">
+			<span class="icon1">货主找车</span>
+		</div>
+		<div class="capacity-tab-box">
+			<span class="icon2">车主找货</span>
+		</div>
+	</div>
+
+	<div class="capacity-menu zoom">
+		<div class="capacity-menu-left zoom">
+			<div class="capacity-menu-txt">始发地</div>
+			<div class="capacity-menu-box" id="start"></div>
+
+			<div class="capacity-menu-line"></div>
+
+			<div class="capacity-menu-txt">目的地</div>
+			<div class="capacity-menu-box" id="end"></div>
+		</div>
+		<div class="capacity-menu-center zoom">
+			<div class="capacity-menu-txt">车型要求</div>
+			<ul class="capacity-menu-type zoom">
+				<li class="active">乙烯</li>
+				<li>丙烯</li>
+				<li>油罐车</li>
+			</ul>
+		</div>
+		<div class="capacity-menu-right">
+			<button class="tbtn" id="search">查询</button>
+		</div>
+	</div>
+
+	<div class="capacity-table">
+		<table class="ttable" id="ttable"></table>
+	</div>
+</div>
+
+<script type="text/javascript">
+	var start,//始发地
+		end,//目的地
+		ttable;
+
+	//ajax-获取始发地和目的地
+	function ajax_get_transport_locations(){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_transport_locations',
+			type:'get',
+			dataType:'json',
+		}).then(function(data){
+			if(data.code === "0000"){
+				var options= [{name:"请选择",val:""}];
+				data.data.forEach(function(el,index){
+					options.push({name:el,val:el});
+				});
+
+				start = new fn_tselect({elem:$("#start"),options:options});
+				end = new fn_tselect({elem:$("#end"),options:options});
+			}
+		});
+	}
+	
+	//ajax-货主找车
+	function ajax_shipper_looking_for_vehicle(set){
+		$.ajax({
+			url:'https://api0.youbanganda.com/shipper_looking_for_vehicle',
+			type:'post',
+			dataType:'json',
+			data:set
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				var items = [];
+				if(data.length > 0){
+					data.forEach(function(el,index){
+						var obj = {tds:[
+							'<img src="img/capacity/danger.png" />',
+							el.start+'<span class="capacity-table-space"><img src="img/capacity/arrow_long_table.png" /></span>'+el.end,
+							el.deadline,
+							el.vehicle_length+'/'+el.vehicle_type,
+							el.price,
+							'<button class="tbtn order_pick" d-id="'+el.id+'">下单</button>'
+						]};
+						items.push(obj);
+					});
+				};
+
+				ttable.init({items:items});
+			}
+		});
+	}
+
+	//ajax-车主找货
+	function ajax_car_owners_looking_for_goods(set){
+		$.ajax({
+			url:'https://api0.youbanganda.com/car_owners_looking_for_goods',
+			type:'post',
+			dataType:'json',
+			data:set
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				var items = [];
+				if(data.length > 0){
+					data.forEach(function(el,index){
+						var capacityInfo = JSON.stringify({id:el.id,mobile:el.contact});
+						var obj = {tds:[
+							'<img src="img/capacity/danger.png" />',
+							el.start+'<span class="capacity-table-space"><img src="img/capacity/arrow_long_table.png" /></span>'+el.end,
+							el.deadline,
+							el.vehicle_length+'/'+el.vehicle_type,
+							'<a class="capacityDetail" d-data=\''+capacityInfo+'\'>查看详情</a>',
+							'<button class="tbtn order_up" d-id="'+el.id+'">接单</button>'
+						]};
+						items.push(obj);
+					});
+				};
+				
+				ttable.init({items:items});
+			}
+		});
+	}
+
+	//ajax-更新车主找货订单状态
+	function ajax_update_car_owners_looking_for_goods_ordered(id,_this){
+		$.ajax({
+			url:'https://api0.youbanganda.com/update_car_owners_looking_for_goods_ordered',
+			type:'post',
+			dataType:'json',
+			data:{id:id}
+		}).then(function(data){
+			if(data.code === "0000"){
+				_this.html("已接单");
+			}
+		});
+	}
+
+	//ajax-更新货主找车订单状态
+	function ajax_update_shipper_looking_for_vehicle_ordered(id,_this){
+		$.ajax({
+			url:'https://api0.youbanganda.com/update_shipper_looking_for_vehicle_ordered',
+			type:'post',
+			dataType:'json',
+			data:{id:id}
+		}).then(function(data){
+			if(data.code === "0000"){
+				_this.html("已下单");
+			}
+		});
+	}
+
+	//clear data
+	function fn_clear(){
+		start.selected("");//始发地
+		end.selected("");//目的地
+
+		//车型要求
+		$(".capacity-menu-type li").each(function(index,el){
+			$(".capacity-menu-type li").eq(index).removeClass("active");
+		});
+		$(".capacity-menu-type li").eq(0).addClass("active");
+
+		ttable.init({items:"请选择条件查询"});//表格
+	}
+
+	$(function(){
+		ajax_get_transport_locations();//ajax-获取始发地和目的地
+
+		var tt = {
+			elem:$("#ttable"),
+			titles:['类型','始发地<span class="capacity-table-space"></span>目的地','运输时长','货车类型','运费','操作'],
+			items:"请选择条件查询",
+		};
+		ttable = new fn_ttable(tt);
+
+		//点击-tab页
+		$(document).off("click",".capacity-tab-box").on("click",".capacity-tab-box",function(){
+			$(".capacity-tab-box").each(function(index,el){
+				$(".capacity-tab-box").eq(index).removeClass("active");
+			});
+			$(this).addClass("active");
+
+			var titles = ['类型','始发地<span class="capacity-table-space"></span>目的地','运输时长','货车类型','运费','操作'];
+			var tab = $(".capacity-tab").find(".active").find("span").html();
+			if(tab === "货主找车"){
+				titles = ['类型','始发地<span class="capacity-table-space"></span>目的地','运输时间','货车类型','订单详情','操作'];
+			}
+
+			ttable.init({titles:titles});
+
+			fn_clear();//clear data
+		});
+
+		//点击-车型要求
+		$(document).off("click",".capacity-menu-type li").on("click",".capacity-menu-type li",function(){
+			$(".capacity-menu-type li").each(function(index,el){
+				$(".capacity-menu-type li").eq(index).removeClass("active");
+			});
+			$(this).addClass("active");
+		});
+
+		//点击查询
+		$(document).off("click","#search").on("click","#search",function(){
+			var _start = start.value;
+			var _end = end.value;
+			var types = [$(".capacity-menu-type").find(".active").html()];
+
+			// if(!_start){
+			// 	toastr.error('请选择始发地');//提示框
+			// 	return;
+			// }
+
+			// if(!_end){
+			// 	toastr.error('请选择目的地');//提示框
+			// 	return;
+			// }
+
+			var set = {
+				start:_start,
+				end:_end,
+				types:JSON.stringify(types)
+			};
+
+			var tab = $(".capacity-tab").find(".active").find("span").html();
+			if(tab === "货主找车"){
+				ajax_shipper_looking_for_vehicle(set);//ajax-货主找车
+			}else{
+				ajax_car_owners_looking_for_goods(set)//ajax-车主找货
+			}
+		});
+
+		//点击查看详情
+		$(document).off("clilck",".capacityDetail").on("click",".capacityDetail",function(){
+			window.sessionStorage.capacityInfo=$(this).attr("d-data");
+			ajax_nav("capacity-detail");
+		});
+
+		//下单
+		$(document).off("click",".order_pick").on("click",".order_pick",function(){
+			var id = $(this).attr("d-id");
+			ajax_update_shipper_looking_for_vehicle_ordered(id,$(this));//ajax-更新货主找车订单状态
+		});
+
+		//接单
+		$(document).off("click",".order_up").on("click",".order_up",function(){
+			var id = $(this).attr("d-id");
+			ajax_update_car_owners_looking_for_goods_ordered(id,$(this));//ajax-更新车主找货订单状态
+		});
+	});
+</script>

@@ -1,0 +1,155 @@
+<style>
+    .mngCar{margin:100px 20px;width:auto;}
+    .mngCar-btn{margin-bottom:10px;}
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-btn">
+        <button class="moperation-btn moperation-add icon-add" id="add">添加</button>
+        <button class="moperation-btn moperation-remove icon-remove" id="remove">删除</button>
+    </div>
+
+    <table class="ttable" id="ttable"></table>
+    <div id="pageDemo"></div>
+</div>
+
+<script type="text/javascript">
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"车辆保养管理"},
+    ]);
+
+    var tt = {
+        elem:$("#ttable"),
+        titles:['checkbox','车牌号码','保养日期','保养编号','保养类型','保养项目','标准保养里程','保养时里程值','保养厂','保养金额','保养原因','操作'],
+        items:"请选择条件查询",
+    };
+    var ttable = new fn_ttable(tt);
+
+    function ajax_get_maintaince_record_list(set){
+        $.ajax({
+            url:ajax_106+"/get_maintaince_record_list",
+            type:"post",
+            dataType:"json",
+            data:set
+        }).then(function(data){
+            if(data.code === "0000"){
+                data = data.data;
+                if(pageSign===1){
+                    pageSign++;
+                    new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_get_maintaince_record_list,set:set});//初始化分页
+                }
+
+                fn_list(data.items,"mng_car_repair");
+
+            }
+        });
+    }
+
+    function fn_list(items,sign){
+        if(items === "loading"){
+            ttable.init({items:"加载中……"});
+            return;
+        }
+
+        if(!items || items.length==0){
+            ttable.init({items:[]});
+            return;
+        }
+
+        if(sign != "mng_car_repair")return;
+
+        data_rank = items;
+
+        var items = fn_format_arr(items);
+
+        var arr = [];
+        items.forEach(function(el,index){
+            index++;
+            var hover_data_details = {
+                id:el.id,
+                type:"details"
+            };
+            var hover_data_default = {
+                id:el.id,
+                type:"default"
+            };
+            var html_operation = '<a class="hover" d-data=\''+JSON.stringify(hover_data_details)+'\'>查看明细</a><a class="hover" d-data=\''+JSON.stringify(hover_data_default)+'\'>/编辑</a>';
+            var obj = {tds:[
+                '<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+                el.license_plate,
+                el.maintenance_date,
+                el.maintenance_number,
+                el.maintenance_type,
+                el.maintenance_program,
+                el.maintenance_personnel,
+                el.expected_maintenance_days,
+                el.maintenance_plant,
+                el.maintenance_amount,
+                el.reason_maintenance,
+                html_operation,
+            ]};
+            arr.push(obj);
+        });
+        ttable.init({items:arr});
+    }
+
+    var pageSign = 1;//分页需要的参数
+    var curr = 1;//分页当前页
+    var data_set = {
+        extra_id:info_login.data.extraid,
+        page:1,
+        interval:10,
+    };
+    ajax_get_maintaince_record_list(data_set);
+
+    function ajax_delete_maintaince_record(id){
+        $.ajax({
+            url:ajax_106+"/delete_maintaince_record",
+            type:"post",
+            dataType:"json",
+            data:{ids:id}
+        }).then(function(data){
+            if(data.code === "0000"){
+                pageSign = 1;//分页需要的参数
+                curr = 1;//分页当前页
+                data_set.page = 1;
+                ajax_get_maintaince_record_list(data_set);
+                toastr.success(data.message);
+            }
+        });
+    }
+
+    $(function(){
+        $(document).off("click","#add").on("click","#add",function(){
+            ajax_nav("mng-car-maintain-add");
+        });
+
+        $(document).off("click","#remove").on("click","#remove",function(){
+            var arr = ttable.checked();
+            if(arr.length == 0){
+                toastr.error("请选择需要删除的项");
+                return;
+            }
+            arr = JSON.stringify(arr);
+            ajax_delete_maintaince_record(arr);
+            console.log(arr);
+        });
+
+        $(document).off("click",".hover").on("click",".hover",function(){
+            var data = $(this).attr("d-data");
+            data = JSON.parse(data);
+            window.sessionStorage.info_mngCarMaintain = $(this).attr("d-data");
+            if(data.type === "default"){
+                ajax_nav("mng-car-maintain-edit");
+            }else{
+                ajax_nav("mng-car-maintain-default");
+            }
+        });
+    });
+</script>
+
+
+

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Expires" content="0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Cache-control" content="no-cache">
+<meta http-equiv="Cache" content="no-cache">
+<title>友邦BMS管理系统 - 登录</title>
+<link type="image/x-icon" rel="shortcut icon" href="img/logo/logo.png">
+<style>
+	@charset "utf-8";
+	*{margin:0;padding:0;font-size:16px;font-family:Tahoma, Arial,"微软雅黑","黑体";color:#edeff2;outline:none;-webkit-tap-highlight-color:rgba(255,0,0,0);-webkit-user-select:none;}
+	img{border:0;}
+	input{outline:none;-webkit-user-select:auto;}
+	input::-webkit-input-placeholder{
+	    font-size:16px;
+	    color:#70788c;
+	}
+	input[type="button"], input[type="submit"], input[type="reset"] {-webkit-appearance: none;}
+	.zoom:after{clear:both;content:"/";height:0;display:block;visibility:hidden;overflow:hidden;}
+
+	body{background-image:url('img/login/bg.jpg');background-repeat:no-repeat;background-position:center top;background-color:#05060b;}
+	.login{width:450px;height:300px;margin-top:10%;}
+	.login-logo{width:50px;height:50px;}
+	.login-logo img{width:50px;height:50px;}
+	.login-info{margin:15px 0 60px 0;font-size:16px;}
+	.login-item{margin-bottom:10px;}
+	.login-item input{width:calc(100% - 40px);padding:0 20px;height:50px;background:rgba(255,255,255,0.1);border:none;border-radius:2px;}
+	.login-button button{width:100%;height:50px;background:rgba(255,158,19,0.95);border-radius:2px;border:none;color:#fff;}
+	.login-button button:hover{background:rgba(255,158,19,1;}
+</style>
+<script src="detector/detector.js"></script>
+<script type="text/javascript">
+	//浏览器版本判断：隔离浏览器：ie5\6\7\8\9
+	(function getExplorer() {
+	    var explorer = window.navigator.userAgent ;
+
+	    //ie 
+	    if (explorer.indexOf("MSIE") >= 0) {
+	        var ieNum = explorer.substr(explorer.indexOf("MSIE")+5,1);
+	        if(ieNum == '11'){
+	            
+	        }else{
+	            window.location.href = '404.html';
+	            return;
+	        }
+	    }
+	    //edge 
+	    else if (explorer.indexOf("Edge") >= 0) {
+	        console.log("Edge");
+	        window.location.href = '404.html';
+	        return;
+	    }
+	    //firefox 
+	    else if (explorer.indexOf("Firefox") >= 0) {
+	        console.log("Firefox");
+	    }
+	    //Chrome
+	    else if(explorer.indexOf("Chrome") >= 0){
+	        console.log("Chrome");
+	    }
+	    //Opera
+	    else if(explorer.indexOf("Opera") >= 0){
+	        console.log("Opera");
+	    }
+	    //Safari
+	    else if(explorer.indexOf("Safari") >= 0){
+	        console.log("Safari");
+	    }
+
+	    if ( ! Detector.webgl ){
+			window.location.href="webgl.html";
+		}
+	})()
+
+	function IsPC() {
+	    var userAgentInfo = navigator.userAgent;
+	    var Agents = ["Android", "iPhone",
+	                "SymbianOS", "Windows Phone",
+	                "iPad", "iPod"];
+	    var flag = true;
+	    for (var v = 0; v < Agents.length; v++) {
+	        if (userAgentInfo.indexOf(Agents[v]) > 0) {
+	            flag = false;
+	            break;
+	        }
+	    }
+	    return flag;
+	}
+
+	var flag = IsPC(); //true为PC端，false为手机端
+	if(!flag)window.location.href="isPhone.html";
+
+
+	
+</script>
+
+</head>
+<body>
+<div style="width:1200px;margin:0 auto;">
+	<div class="login">
+		<div class="login-logo"><img src="img/logo/logo.png" /></div>
+		<div class="login-info">欢迎进入友邦安达管理系统</div>
+		<div class="login-item"><input type="text" id="userName" placeholder="用户名" /></div>
+		<div class="login-item"><input type="password" id="pwd" placeholder="密码" /></div>
+		<div class="login-button"><button id="login">登&nbsp;&nbsp;&nbsp;录</button></div>
+	</div>
+</div>
+
+<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+<script type="text/javascript" src="//cdn.bootcss.com/js-cookie/2.1.2/js.cookie.min.js"></script>
+<script type="text/javascript" src="laydate/laydate.js"></script>
+<script type="text/javascript" src="layui/layui.js"></script><!--分页-->
+<script type="text/javascript" src="js/login.js?v=1.0"></script><!--分页-->
+</body>
+</html>

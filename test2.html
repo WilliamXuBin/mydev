@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title >友邦BMS管理系统</title>
+<link type="image/x-icon" rel="shortcut icon" href="img/logo/logo.png">
+<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.0.1/css/bootstrap.min.css">
+</head>
+<body>
+
+<input type="file" id="aaa" />
+<img src="" id="bbb" alt="">
+<script src="https://cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+<script type="text/javascript" src="http://jssdk-v2.demo.qiniu.io/dist/qiniu.min.js"></script>
+<script type="text/javascript">
+	var _file;
+	function ajax_token(){
+		$.ajax({
+			url:"https://api.zhirensha.com/utility/oss_token",
+			type:"post",
+			dataType:"json",
+			data:{
+				private:0,
+				media_type:1
+			}
+		}).then(function(data){
+			console.log(data)
+			upload123(data)
+		});
+	}
+	
+	function upload123(data){
+	    var config = {
+	      useCdnDomain: true,
+	      disableStatisticsReport: false,
+	      retryCount: 5,
+	      region: qiniu.region.z0
+	    };
+
+	    var putExtra = {
+	      fname: "",
+	      params: {},
+	      mimeType: null
+	    };
+	    var file = document.querySelector('[type=file]');
+	    var formData = new FormData();
+	    formData.append("file",file.files[0]);
+	    formData.append("key",data.key);
+	    formData.append("token",data.token);
+	    ajaxAddVoucherToMore(formData);
+	}
+
+	function ajaxAddVoucherToMore(set){
+		console.log(set)
+	    $.ajax({
+	    	url:"https://upload.qiniup.com",
+	    	type:"post",
+	    	dataType:"json",
+	    	data:set,
+	    	cache: false,                      // 不缓存
+		    processData: false,                // jQuery不要去处理发送的数据
+		    contentType: false,                // jQuery不要去设置Content-Type请求头
+	    }).then(function(data){
+	    	console.log(data)
+	    	var url = "http://p33lgykel.bkt.clouddn.com/";
+	    	$("#bbb").attr("src",url+data.key);
+	    });
+	}
+
+	$("#aaa").change(function(){
+		console.log(123)
+		ajax_token();
+	});
+</script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<style>
+</style>
+<div class="single">
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择时间</div>
+			<div class="singleMenu-item-content" id="days" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_start">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:200px;">
+				<input type="text" class="dtext" placeholder="请选择" id="start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});"> />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_end">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:200px;">
+				<input type="text" class="dtext" placeholder="请选择" id="end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+
+		<div class="singleMenu-item"><button class="dbtn" id="btn_envir">确定</button></div>
+	</div>
+	<div class="single-loading"></div>
+	<div class="single-none"><span>当前无数据</span></div>
+	<div class="single-main">
+	</div>
+</div>
+
+<script type="text/javascript">
+	objLoading.elem = $(".single-loading");//加载动画容器
+
+	var sel_vehicle = new fn_tselect({elem:$("#vehicle"),options:[{name:"请选择",val:""}]});
+	var sel_days = new fn_tselect({elem:$("#days"),options:[
+		{name:"请选择",val:""},
+		{name:"今天",val:"1"},
+		{name:"昨天",val:"2"},
+		{name:"最近3天",val:"3"},
+		{name:"最近7天",val:"7"},
+		{name:"最近30天",val:"30"},
+	]});
+
+	sel_days.on("change",function(){
+		if(!sel_days.value){
+			$("#item_start").show();
+			$("#item_end").show();
+		}else{
+			$("#item_start").hide();
+			$("#item_end").hide();
+		}
+	});
+
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"安全中心"},
+		{name:"单车实时监控",href:"data-single"},
+		{name:"更多环境得分"},
+	]);
+
+	//ajax-getCarsList
+	function ajax_get_vehicles(){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:'json',
+			async:true,
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			}
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(data && data.length>0){
+					var html = '<option value=""><font><font>请选择</font></font></option>';
+					var options = [{name:"请选择",val:""}];
+					data.forEach(function(el,index){
+						options.push({name:el.name,val:el.id});
+					});
+					sel_vehicle = new fn_tselect({elem:$("#vehicle"),options:options});
+
+					if(window.sessionStorage.info_dataSingle_detail){
+						var info_dataSingle_detail = JSON.parse(window.sessionStorage.info_dataSingle_detail);
+						sel_days.selected("1");
+						sel_vehicle.selected(info_dataSingle_detail.vehicle_id);
+						$("#btn_envir").click();
+					}
+				}
+			}
+		});
+	}
+
+	function fn_chart(items){
+		if(!items || items.length === 0){
+			$(".single-main").hide();
+			$(".single-none").show();
+			return;
+		}
+
+		var colors = ["#007ee0","#00e6d5","#fecb00","#ff4622","#ff7dda","#007ee0","#007ee0","#007ee0","#007ee0"];
+
+		$(".single-main").html("");
+		items.forEach(function(el,index){
+			var html = '<div class="single-item"><div class="single-item-title">'+el.title+'</div><div class="single-item-content single-echart-main"><div class="single-echart" id="m'+index+'"></div></div></div>';
+			$(".single-main").append(html);
+
+			var myChart = echarts.init(document.getElementById("m"+index));
+
+	        var option = {
+	        	color:colors[index],
+			    tooltip : {
+			        trigger: 'axis',
+			        axisPointer: {
+			            type: 'cross',
+			            label: {
+			                backgroundColor: '#6a7985'
+			            }
+			        }
+			    },
+			    grid: {
+			        left: '3%',
+			        right: '5%',
+			        bottom: '3%',
+			        top: '5%',
+			        containLabel: true
+			    },
+			    xAxis : [
+			        {
+			            type : 'category',
+			            boundaryGap : false,
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            axisTick:{show:false},
+			            splitLine:{show:false},
+			            data : el.infoX
+			        }
+			    ],
+			    yAxis : [
+			        {
+			            type : 'value',
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            //axisTick:{show:false},
+			            splitLine:{show:false},
+			        }
+			    ],
+			    series : [
+			        {
+			            name:el.title,
+			            type:'line',
+			            //lineStyle:{normal:{width:0}},
+			            symbol: 'none',
+			            areaStyle: {
+				            	normal: {
+				            	opacity:0.1,
+				            }
+				        },
+			            data:el.infoY
+			        }
+			    ]
+			};
+
+	        myChart.setOption(option);
+		});
+	}
+
+	//ajax-获得车辆的驾驶得分
+	function ajax_get_vehicle_drive_score(set){
+		$(".single-main,.single-none").hide();
+		objLoading.show();
+		$.ajax({
+			url:ajax_106+'/get_vehicle_envir_score',
+			type:'post',
+			dataType:'json',
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+				vehicle_id:set.vehicle_id,
+				days:set.days,
+				start:set.start,
+				end:set.end,
+			}
+		}).then(function(data){
+			objLoading.hide();
+			if(data.code === "0000"){
+				$(".single-main").show();
+				$(".single-none").hide();			
+				fn_chart(data.data);
+			}else{
+				$(".single-main").hide();
+				$(".single-none").show();
+			}
+		});
+	}
+
+	$(function(){
+		ajax_get_vehicles();//ajax-getCarsList
+
+		//点击搜索
+		$(document).off("click","#btn_envir").on("click","#btn_envir",function(){
+			var vehicle_id = sel_vehicle.value;//获取车辆
+			var start = $("#start").val();//获取开始时间
+			var end = $("#end").val();//获取结束时间
+			var days = sel_days.value;//获取选择时间
+
+			if(!vehicle_id){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			if(!start && !end && !days){
+				toastr.error('请选择时间');//提示框
+				return;
+			}
+
+			if(!days && start >= end){
+				toastr.error('开始时间不能大于等于结束时间！');//提示框
+				return;
+			}
+
+			var postData = {
+				vehicle_id:vehicle_id,
+				days:days,
+				start:start,
+				end:end,
+			};
+			ajax_get_vehicle_drive_score(postData);//ajax-列表
+		});
+
+		
+	});
+</script>

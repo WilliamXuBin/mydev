@@ -1,0 +1,358 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+	.analysis-main{margin:40px 0;}
+</style>
+
+<div class="analysis zoom">
+	<div id="sel_result"></div>
+
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择类型</div>
+			<div class="singleMenu-item-content" id="sel_type" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="sel_vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_start" style="display:none;">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_end" style="display:none;">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search_vehilemileag">确定</button></div>
+	</div>
+	
+	<div class="analysis-loading"></div>
+	<div class="analysis-main"></div>
+
+	<div class="moperation zoom">
+		<div class="moperation-left"><span id="moperation_txt" style="display:block;">报表数据</span></div>
+		<div class="moperation-right">
+			<button class="moperation-btn moperation-btn-icon moperation-btn-rank" id="rank">排序：里程 低→高</button>
+			<!-- <button class="moperation-btn moperation-btn-icon moperation-btn-export" id="btn_export">导出报表</button> -->
+		</div>
+	</div>
+	<table class="ttable" id="ttable"></table>
+	<div id="pageDemo"></div>
+</div>
+
+<script type="text/javascript">
+	clearTimer();//清除定时器
+	var sel_type = new fn_tselect({elem:$("#sel_type"),options:[
+			{name:"请选择",val:""},
+			{name:"里程日报",val:"1"},
+			{name:"里程周报",val:"7"},
+			{name:"里程月报",val:"30"},
+			{name:"里程明细",val:"content"},
+		],selected:""});
+	sel_type.on("change",function(){
+		sel_type.value === "content"?$("#item_start,#item_end").show():$("#item_start,#item_end").hide();
+	});
+	var sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:[]});
+
+	var tt = {
+			elem:$("#ttable"),
+			titles:['序号','所属公司','车牌号','时间段','行驶里程(km)','行驶时长(h)','平均速度(km/h)','开始位置','结束位置'],
+			items:"请选择条件查询",
+		};
+	var ttable = new fn_ttable(tt);
+	
+	var data_rank = [];//排序
+
+	//ajax-获取里程报表
+	function ajax_post(set){
+		fn_table_loading();//列表加载中
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_vehicle_mileage_table_data2',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				setTimeout(fn_list(data,"vehiclemileag"),1000);
+			}
+		});
+	}
+
+	function fn_list(items,sign){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+		
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		if(sign != "vehiclemileag")return;
+
+		data_rank = items;
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			index++;
+			var obj = {tds:[
+				index,
+				el.company,
+				el.licence,
+				el.time,
+				el.mileage,
+				el.runtime,
+				el.avg_speed,
+				el.start_location,
+				el.end_location,
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	//ajax-获取车辆里程数据_柱状图
+	function ajax_get_vehicle_mileage_chart_data(set){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_vehicle_mileage_chart_data2',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				var obj = {
+					title:"里程(km)",
+					infoX:data.infoX,
+					infoY:data.infoY,
+				};
+				fn_chart([obj]);
+			}
+		});
+	}
+
+	function fn_chart(items,type){
+		if(!items || items.length === 0){
+			$(".single-echart-none").show();
+			return;
+		}
+
+		var colors = [["#008df2"],["#12e6d4"],["#fdca00"],["#ff482f"]];
+
+		$(".analysis-main").html("");
+		items.forEach(function(el,index){
+			var html = '<div class="single-item"><div class="single-item-title">'+el.title+'</div><div class="single-item-content single-echart-main"><div class="single-echart" id="m'+index+'"></div><div class="single-echart-none">未查询到结果</div><div class="single-echart-legend" style="display:none;"><span class="legend-1">30km/h以下</span><span class="legend-2">30km/h以下</span><span class="legend-3">30km/h以下</span><span class="legend-4">30km/h以下</span></div></div></div>';
+			$(".analysis-main").append(html);
+
+			var myChart = echarts.init(document.getElementById("m"+index));
+
+	        var option = {
+	        	color:colors[1],
+			    tooltip : {
+			        trigger: 'axis',
+			        axisPointer: {
+			            type: 'cross',
+			            label: {
+			                backgroundColor: '#6a7985'
+			            }
+			        }
+			    },
+			    grid: {
+			        left: '3%',
+			        right: '5%',
+			        bottom: '3%',
+			        top: '5%',
+			        containLabel: true
+			    },
+			    xAxis : [
+			        {
+			            type : 'category',
+			            boundaryGap : false,
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            axisTick:{show:false},
+			            splitLine:{show:false},
+			            data : el.infoX
+			        }
+			    ],
+			    yAxis : [
+			        {
+			            type : 'value',
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            //axisTick:{show:false},
+			            splitLine:{show:false},
+			        }
+			    ],
+			    series : [
+			        {
+			            name:el.title,
+			            type:'line',
+			            //lineStyle:{normal:{width:0}},
+			            symbol: 'none',
+			            areaStyle: {
+				            	normal: {
+				            	opacity:0.15,
+				            }
+				        },
+			            data:el.infoY
+			        }
+			    ]
+			};
+
+	        myChart.setOption(option);
+		});
+		if(type)return;
+		$(".single-echart-none").hide();
+	}
+
+	//获取车辆列表
+	function ajax_get_vehicles(){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:"json",
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_get_vehicles(data.data);
+			}
+		});
+	}
+	ajax_get_vehicles();//获取车辆列表
+
+	//fn-获取车辆
+	function fn_get_vehicles(items){
+		var options = [{name:"请选择",val:"all"}];
+		items.forEach(function(el,index){
+			options.push({val:el.id,name:el.name});
+		});
+		sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:options,type:"checkbox",result:$("#sel_result")});
+		//$("#search_vehilemileag").click();
+	}
+
+	$(function(){
+		//点击确定
+		$(document).off("click","#search_vehilemileag").on("click","#search_vehilemileag",function(){
+			var type = sel_type.value;
+			if(!type){
+				toastr.error('请选择类型');//提示框
+				return;
+			}
+
+			var vehicle_ids = sel_vehicle.selecteds;
+			if(vehicle_ids.length === 0){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			var menu_start = $("#menu_start").val();
+			var end_start = $("#menu_end").val();
+
+
+			if(type === "content"){
+				if(!menu_start){
+					toastr.error('请选择开始时间');//提示框
+					return;
+				}
+
+				if(!end_start){
+					toastr.error('请选择结束时间');//提示框
+					return;
+				}
+
+				if(menu_start >= end_start){
+					toastr.error('开始时间不能大于等于结束时间！');//提示框
+					return;
+				}
+			}
+
+			if(type !== "" && type !== "content"){
+				menu_start = "";
+				end_start = "";
+				$("#menu_start").val("");
+				$("#menu_end").val("");
+			}
+			
+			var data_set = {
+				days:type==="content"?"":type,
+				vehicle_ids:"["+vehicle_ids.join(",")+"]",
+				start:menu_start,
+				end:end_start,
+			};
+
+			data_rank=[];//排序
+			fn_list("loading");
+			ajax_post(data_set);//ajax-获取里程报表
+			ajax_get_vehicle_mileage_chart_data(data_set);//ajax-获取车辆里程数据_柱状图
+		});
+
+		//点击进入详情
+		$(document).off("click",".table_link").on("click",".table_link",function(){
+			var info_detail = $(this).attr("d-data");
+			window.sessionStorage.info_detail = info_detail;
+
+			ajax_nav('fenceDetail');//导航路由
+		});
+
+		//导出报表
+		$("#btn_export").click(function(){
+			var menu_start = $("#menu_start").val();
+			var end_start = $("#menu_end").val();
+
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!end_start){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			var arr = menu_selected.selecteds();
+
+			if(arr.length===0){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			var data_set = {
+				vehicle_ids:"["+arr+"]",
+				start:menu_start,
+				end:end_start,
+			};
+			console.log($.param(data_set))
+
+			window.open('https://performance.whome.cn/generate_vehicle_mileage_report?'+$.param(data_set));
+		});
+
+		//排序
+		var rank_sign = "low";
+		$(document).off("click","#rank").on("click","#rank",function(){
+			if(data_rank.length === 0)return;
+			data_rank = data_rank.sort(compare('mileage',rank_sign));
+			rank_sign === "low"?rank_sign = "high":rank_sign = "low";
+			fn_list(data_rank,"vehiclemileag");
+		});
+	});
+</script>

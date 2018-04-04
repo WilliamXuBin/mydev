@@ -1,0 +1,138 @@
+<style>
+    .mngCar{margin:100px 20px;width:auto;}
+    .mngCar-btn{margin-bottom:10px;}
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-btn">
+        <button class="moperation-btn moperation-add icon-add" id="add">添加</button>
+        <button class="moperation-btn moperation-remove icon-remove" id="remove">删除</button>
+    </div>
+
+    <table class="ttable" id="ttable"></table>
+    <div id="pageDemo"></div>
+</div>
+
+<script type="text/javascript">
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"车队信息"},
+    ]);
+
+    var tt = {
+        elem:$("#ttable"),
+        titles:['checkbox','车队名称','车队编码','负责人姓名','负责人电话','备注','操作'],
+        items:"请选择条件查询",
+    };
+    var ttable = new fn_ttable(tt);
+
+    function ajax_get_vehicle_team_infos(set){
+        $.ajax({
+            url:ajax_106+"/get_vehicle_team_infos",
+            type:"post",
+            dataType:"json",
+            data:set
+        }).then(function(data){
+            if(data.code === "0000"){
+                data = data.data;
+                if(pageSign===1){
+                    pageSign++;
+                    new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_get_vehicle_team_infos,set:set});//初始化分页
+                }
+
+                setTimeout(fn_list(data.items,"mng_car_fleet"),1000);
+            }
+        });
+    }
+
+    function fn_list(items,sign){
+        if(items === "loading"){
+            ttable.init({items:"加载中……"});
+            return;
+        }
+
+        if(!items || items.length==0){
+            ttable.init({items:[]});
+            return;
+        }
+
+        if(sign != "mng_car_fleet")return;
+
+        data_rank = items;
+
+        var items = fn_format_arr(items);
+
+        var arr = [];
+        items.forEach(function(el,index){
+            index++;
+            var hover_data = {
+                id:el.id
+            };
+            var html_operation = '<a class="hover" d-data=\''+JSON.stringify(hover_data)+'\'>编辑</a>';
+            var obj = {tds:[
+                '<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+                el.team_name,
+                el.team_number,
+                el.charge_person_name,
+                el.charge_person_phone,
+                el.imformation,
+                html_operation,
+            ]};
+            arr.push(obj);
+        });
+        ttable.init({items:arr});
+    }
+
+    var pageSign = 1;//分页需要的参数
+    var curr = 1;//分页当前页
+    var data_set = {
+        extra_id:info_login.data.extraid,
+        page:1,
+        interval:10,
+    };
+    ajax_get_vehicle_team_infos(data_set);
+
+    function ajax_delete_vehicle_team_info(id){
+        $.ajax({
+            url:ajax_106+"/delete_vehicle_team_info",
+            type:"post",
+            dataType:"json",
+            data:{vehicle_team_info_ids:id}
+        }).then(function(data){
+            if(data.code === "0000"){
+                pageSign = 1;//分页需要的参数
+                curr = 1;//分页当前页
+                data_set.page = 1;
+                ajax_get_vehicle_team_infos(data_set);
+                toastr.success(data.message);
+            }
+        });
+    }
+
+    $(function(){
+        $(document).off("click","#add").on("click","#add",function(){
+            ajax_nav("mng-car-fleet-add");
+        });
+
+        $(document).off("click","#remove").on("click","#remove",function(){
+            var arr = ttable.checked();
+            if(arr.length == 0){
+                toastr.error("请选择需要删除的项");
+                return;
+            }
+            arr = JSON.stringify(arr);
+            ajax_delete_vehicle_team_info(arr);
+            console.log(arr)
+        });
+
+        $(document).off("click",".hover").on("click",".hover",function(){
+            window.sessionStorage.info_mngCarFleet = $(this).attr("d-data");
+            ajax_nav("mng-car-fleet-edit");
+        });
+    });
+</script>
+
+
+

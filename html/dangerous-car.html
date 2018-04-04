@@ -1,0 +1,206 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+	.analysis-main{margin:40px 0;}
+</style>
+
+<div class="analysis zoom">
+	<div id="sel_result"></div>
+
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom" id="item_start">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_end">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">所属公司</div>
+			<div class="singleMenu-item-content" id="sel_company" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search_dangerousCar">确定</button></div>
+	</div>
+
+	<div class="analysis-loading"></div>
+	<div class="analysis-main"></div>
+	
+	<div class="moperation zoom">
+		<div class="moperation-left"><span id="moperation_txt" style="display:block;">报表数据</span></div>
+		<div class="moperation-right">
+			<!-- <button class="moperation-btn moperation-btn-icon moperation-btn-export" id="btn_export">导出报表</button> -->
+		</div>
+	</div>
+		
+	<table class="ttable" id="ttable"></table>
+	<div id="pageDemo"></div>
+</div>
+<script type="text/javascript">
+	var sel_company = new fn_tselect({elem:$("#sel_company"),options:[]});
+
+	var tt = {
+		elem:$("#ttable"),
+		titles:['序号','车辆牌照','所属机构','安全得分','行驶里程(km)','操作'],
+	//	items:"请选择条件查询",
+	};
+	var ttable = new fn_ttable(tt);
+
+	//配置当前时间
+	function init_data(){
+		$("#menu_start").val(format_date());
+		$("#menu_end").val(format_date({dd:"now"}));
+	}
+	init_data();
+
+	//获取全部组织
+	function ajax_get_organizations(){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_organizations',
+			type:'post',
+			dataType:'json',
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				if(data.data && data.data.length > 0){
+					fn_get_organizations(data.data)
+				}
+			}
+		});
+	}
+
+	//fn-所属公司
+	function fn_get_organizations(items){
+		var options = [{name:"请选择",val:""}];
+		items.forEach(function(el,index){
+			options.push({val:el.id,name:el.name});
+		});
+		sel_company = new fn_tselect({elem:$("#sel_company"),options:options});
+		$("#search_dangerousCar").click();
+	}
+
+	var pageSign = 1;//分页需要的参数
+	var curr = 1;//分页当前页
+
+	// var data_set = {
+	// 	company_id:"",
+	// 	start:"",
+	// 	end:"",
+	// 	page:1,
+	// 	interval:10,
+	// };
+
+	//ajax-获得停车统计
+	function ajax_post(set){
+		fn_table_loading();//列表加载中
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/get_dangerous_car',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_post,set:set});//初始化分页
+				}
+				setTimeout(fn_list(data.items,"danger_car"),1000);
+			}
+		});
+	}
+
+	//fn-停车统计
+	function fn_list(items,sign){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+		if(sign != "danger_car")return;
+
+		var items = fn_format_arr(items);
+		var arr = [];
+
+		items.forEach(function(el,index){
+			var info = {
+				id:el.id,
+				start:$("#menu_start").val(),
+				end:$("#menu_end").val(),
+			};
+
+			index++;
+			var obj = {tds:[
+				index,
+				el.licence_plates,
+				el.name,
+				el.today_score,
+				el.today_mileage,
+				'<a class="hover" d-data=\''+JSON.stringify(info)+'\'>查看明细</a>',
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	$(function(){
+		ajax_get_organizations();//获取全部组织
+
+		//ajax_post(data_set);//ajax-获得停车统计
+		$(document).off("click","#search_dangerousCar").on("click","#search_dangerousCar",function(){
+			var company = sel_company.value;
+			// if(!company){
+			// 	toastr.error('请选择所属公司');//提示框
+			// 	return;
+			// }
+
+			var start = $("#menu_start").val();
+			var end = $("#menu_end").val();
+
+			if(!start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!end){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			if(start >= end){
+				toastr.error('开始时间不能大于等于结束时间！');//提示框
+				return;
+			}
+
+			var postData = {
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+				company_id:company,
+				start:start,
+				end:end,
+				page:1,
+				interval:10,
+			};
+			fn_list("loading");
+			ajax_post(postData);
+		});
+
+		//点击进入详情
+		$(document).off("click",".hover").on("click",".hover",function(){
+			var info_dataSingle = $(this).attr("d-data");
+			window.sessionStorage.info_dataSingle = info_dataSingle;
+			ajax_nav('unsafe-incident');//导航路由
+		});
+	});
+</script>

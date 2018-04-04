@@ -1,0 +1,169 @@
+<style>
+#pageDemo{margin-top:10px;text-align:center;}
+.moperation{}
+.ttable{margin:10px 0;}
+</style>
+
+<div class="analysis">
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">设备号</div>
+			<div class="singleMenu-item-content" style="">
+				<input type="text" class="dtext" placeholder="" id="searchUser" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">硬件版本</div>
+			<div class="singleMenu-item-content" style="">
+				<input type="text" class="dtext" placeholder="" id="searchName" />
+			</div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="btn_equipment">确定</button></div>
+	</div>
+		
+	<table class="ttable" id="ttable"></table>
+	<div class="moperation zoom">
+		<button class="moperation-btn" id="add_equipment">添加</button>
+		<button class="moperation-btn" id="remove_equipment">删除</button>
+		<button class="moperation-btn" id="edit_equipment">编辑</button>
+	</div>
+	<div id="pageDemo"></div>
+</div>
+
+<script type="text/javascript">
+var tt = {
+	elem:$("#ttable"),
+	titles:['checkbox','设备号','硬件版本','企业名','车牌号','修改人','修改时间'],
+	items:"请选择条件查询",
+};
+var ttable = new fn_ttable(tt);
+
+$(function(){
+	var curr = 1;//分页当前页
+	var data_set = {
+		id_key:"",
+		company_key:"",
+		page:1,
+		interval:10,
+	};
+
+	var pageSign = 1;//分页需要的参数
+	//ajax-获得特定公司的智能硬件列表
+	function ajax_post(set){
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/search_or_get_all_hardware',
+			type:'post',
+			dataType:'json',
+			data:{
+				id_key:set.id_key,
+				company_key:set.company_key,
+				page:set.page,
+				interval:set.interval,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_post,set:set});//初始化分页
+				}
+				
+				fn(data.items);
+			}
+		});
+	}
+	ajax_post(data_set);
+
+	function fn(items){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+		
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			var obj = {tds:[
+				'<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+				el.device_id,
+				el.version,
+				el.company_name,
+				el.licence,
+				el.updateperson,
+				el.updatetime,
+			]};
+			arr.push(obj);
+		});
+
+		ttable.init({items:arr});
+	}
+
+	//ajax-delectList
+	function ajax_delete_hardware(id){
+		$.ajax({
+			url:ajax_106+'/delete_hardware',
+			type:'post',
+			dataType:'json',
+			data:{hardware_ids:id},
+		}).then(function(data){
+			if(data.code === "0000"){
+				data_set.page = curr;
+				ajax_post(data_set);
+			}
+		});
+	}
+
+	//点击删除
+	$(document).off("click","#remove_equipment").on("click","#remove_equipment",function(){
+		var arr = ttable.checked();
+
+		if(arr.length===0){
+			toastr.info('请勾选列表')//提示框
+			return false;
+		}else{
+			new msgAlert({info:'确定要删除此条信息？删除后无法恢复。'}).on('btnOkClick',function(){
+				pageSign = 1;//分页需要的参数
+				curr = 1;//分页当前页
+
+				ajax_delete_hardware("["+arr.join(",")+"]");//ajax-delectList
+			});
+		}
+	});
+
+    //点击添加
+    $(document).off("click","#add_equipment").on("click","#add_equipment",function(){
+    	ajax_nav("add-equip");
+    });
+    
+	//修改时控制复选框只能选中一条数据
+	$(document).off("click","#edit_equipment").on('click','#edit_equipment',function(){
+		var arr = ttable.checked();
+
+		if(arr.length===0 || arr.length>1){
+			toastr.info('只能操作一条数据，请重新选择')//提示框
+		}else{
+			window.localStorage.id = arr[0];//保存ID
+			ajax_nav("modify-equip");
+		}
+	});
+
+	$(document).off("click","#btn_equipment").on("click","#btn_equipment",function(){
+		var user = $("#searchUser").val();//获取登录名
+		var name = $("#searchName").val();//获取用户名
+
+		pageSign = 1;//分页需要的参数
+		curr = 1;//分页当前页
+
+		data_set.id_key = user;
+		data_set.company_key = name;
+		ajax_post(data_set);
+	});
+});
+</script>

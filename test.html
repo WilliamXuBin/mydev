@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title >友邦BMS管理系统</title>
+<link type="image/x-icon" rel="shortcut icon" href="img/logo/logo.png">
+<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.0.1/css/bootstrap.min.css">
+</head>
+<body>
+
+<input type="file" id="aaa" />
+<img src="" id="bbb" alt="">
+<script src="https://cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+<script type="text/javascript" src="http://jssdk-v2.demo.qiniu.io/dist/qiniu.min.js"></script>
+<script type="text/javascript">
+	var _file;
+	var pre_url="";
+	function ajax_token(val){
+		$.ajax({
+			url:"https://performance.whome.cn/get_token",
+			type:"get",
+			dataType:"json",
+			data:{
+				file_name:val
+			}
+		}).then(function(data){
+			console.log(data)
+			pre_url = data.data.pre_url;
+			//data.data.key = data.data.token;
+			//data.data.token = data.data.access_key;
+			var set = {
+				token:data.data.token,
+				key:data.data.access_key
+			}
+			//data.data.key = data.data.secret_key;
+			upload123(set)
+		});
+	}
+	
+	function upload123(data){
+	    var config = {
+	      useCdnDomain: true,
+	      disableStatisticsReport: false,
+	      retryCount: 5,
+	      region: qiniu.region.z0
+	    };
+
+	    var putExtra = {
+	      fname: "",
+	      params: {},
+	      mimeType: null
+	    };
+	    var file = document.querySelector('[type=file]');
+	    var formData = new FormData();
+	    formData.append("token",data.token);
+	    formData.append("key",data.key);
+	    formData.append("file",file.files[0]);
+	    
+	    console.log(data)
+	    ajaxAddVoucherToMore(formData);
+	}
+
+	function ajaxAddVoucherToMore(set){
+		console.log(set)
+	    $.ajax({
+	    	url:"https://upload.qiniup.com",
+	    	type:"post",
+	    	dataType:"json",
+	    	data:set,
+	    	cache: false,                      // 不缓存
+		    processData: false,                // jQuery不要去处理发送的数据
+		    contentType: false,                // jQuery不要去设置Content-Type请求头
+	    }).then(function(data){
+	    	console.log(data)
+	    	var url = pre_url;
+	    	$("#bbb").attr("src",url+data.key);
+	    });
+	}
+
+	$("#aaa").change(function(){
+		var val = $(this).val();
+		console.log(val.substring(12))
+		ajax_token(val.substring(12));
+	});
+</script>
+</body>
+</html>

@@ -1,0 +1,574 @@
+<style>
+	.mainBox{width:1200px;margin:42px auto 100px auto;padding:0;}
+	.bmap{width:820px;height:504px;float:left;}
+	.btitle{color:#e5e5e5;font-size:16px;position:relative;padding-left:10px;}
+	.btitle:before{content:"\20";width:4px;height:14px;background:#ff9e13;position:absolute;top:4px;left:0px;border-radius:2px;}
+	.bmap-content{width:100%;height:483px;}
+
+	.bdata{width:380px;float:right;margin-bottom:20px;}
+	.bsoure{}
+	.bsoure-main{margin-top:12px;}
+	.bsoure-num{width:193px;height:191px;line-height:191px;text-align:center;background:url('/img/index/soure_bg.png') no-repeat;margin:8px auto;}
+	/**color:["rgba(18,229,212,1)","rgba(0,141,242,1)"],**/
+	.bsoure-num span{
+	    display: inline-block;
+	    font-size: 60px;
+	    font-family: '微软雅黑';
+	    /*background-image: linear-gradient(-45deg, rgba(0,141,242,1) 25%,  rgba(18,229,212,1)  50%, rgba(18,229,212,1) 95%, rgba(18,229,212,1) 100%);
+	    background-image: -webkit-linear-gradient(-45deg, rgba(0,141,242,1) 25%,  rgba(18,229,212,1)  50%, rgba(18,229,212,1) 95%, rgba(18,229,212,1) 100%); 
+	    background-image: -moz-linear-gradient(-45deg, rgba(0,141,242,1) 25%,  rgba(18,229,212,1)  50%, rgba(18,229,212,1) 95%, rgba(18,229,212,1) 100%); 
+	    background-image: -o-linear-gradient(-45deg, rgba(0,141,242,1) 25%,  rgba(18,229,212,1)  50%, rgba(18,229,212,1) 95%, rgba(18,229,212,1) 100%); */
+	    /*background-image: linear-gradient(0deg, rgba(18,229,212,1) 25%,  rgba(18,229,212,1) 35%, rgba(0,141,242,1) 75%, rgba(0,141,242,1) 100%); */
+	    /*background-image: -webkit-gradient(linear, 0 0, 0 bottom, from(rgba(0,141,242,1)), to(rgba(18,229,212,1)));
+	    background-image: -moz-gradient(linear, 0 0, 0 bottom, from(rgba(0,141,242,1)), to(rgba(18,229,212,1)));
+	    background-image: -o-gradient(linear, 0 0, 0 bottom, from(rgba(0,141,242,1)), to(rgba(18,229,212,1)));*/
+	    /*-webkit-background-clip: text;
+	    -moz-background-clip: text;
+	    -o-background-clip: text;
+	    -webkit-text-fill-color: transparent;
+	    -moz-text-fill-color: transparent;
+	    -o-text-fill-color: transparent;*/
+	    color:rgba(0,141,242,1);
+	}
+
+	.bproportion{margin-top:30px;}
+	.bproportion-main{margin-top:12px;}
+	.bproportion-echart{width:370px;height:210px;}
+
+	.bbox{border:2px solid rgba(24,72,99,0.6);width:370px;height:220px;position:relative;}
+	.bbox-line{position:absolute;top:20px;left:10px;width:370px;height:210px;border-bottom:2px solid rgba(24,72,99,0.6);border-right:2px solid rgba(24,72,99,0.6);z-index:-2;}
+	.bbox-line:before{content:"\20";position:absolute;top:0px;right:0px;width:10px;height:2px;background:rgba(24,72,99,0.6);}
+	.bbox-line:after{content:"\20";position:absolute;bottom:0px;left:0px;width:2px;height:10px;background:rgba(24,72,99,0.6);}
+	.bdata .bbox:after{z-index:1;}
+	.bdata .bbox-line-left{z-index:2;}
+	.bdata .bbox-line-top{z-index:2;}
+
+	.bline{width:370px;height:210px;float:left;margin:0px 40px 0 0;position:relative;}
+	.bline:last-child{margin-right:0;}
+	.bline .btitle{margin-bottom:12px;}
+	.btab{width:140px;height:22px;position:absolute;top:0px;right:0px;border-radius:3px;overflow:hidden;}
+	.btab span{display:block;float:left;width:70px;height:22px;line-height:22px;text-align:center;color:#fff;font-size:12px;cursor:pointer;}
+	.btab .default{background:rgba(76,201,234,0.3);}
+	.btab .active{background:#3cbee0;}
+
+	.bk{width:370px;height:210px;}
+</style>
+
+<div class="mainBox">
+	<div class="zoom">
+		<div class="bmap">
+			<div class="btitle">车辆运输路线</div>
+			<div class="bmap-content" id="imap"></div>
+		</div>
+		<div class="bdata">
+			<div class="bsoure">
+				<div class="btitle">今日安全总体得分</div>
+				<div class="bsoure-main bbox">
+					<div class="bsoure-num">
+						<span id="soure">--</span>
+					</div>
+					<div class="bbox-line"></div>
+				</div>
+			</div>
+			<div class="bproportion">
+				<div class="btitle">今日运输情况占比</div>
+				<div class="bproportion-main bbox">
+					<div class="bproportion-echart" id="bproportion"></div>
+					<div class="bbox-line"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="zoom" style="margin-top:30px;">
+		<div class="bline">
+			<div class="btitle">运行平均里程</div>
+			<div class="btab zoom">
+				<span class="active">最近30天</span>
+				<span class="default">本月</span>
+			</div>
+			<div class="bbox bmileage">
+				<div class="bk" id="bk1"></div>
+				<div class="bbox-line"></div>
+			</div>
+		</div>
+		<div class="bline">
+			<div class="btitle">运行平均时长</div>
+			<div class="btab zoom">
+				<span class="active">最近30天</span>
+				<span class="default">本月</span>
+			</div>
+			<div class="bbox">
+				<div class="bk" id="bk2"></div>
+				<div class="bbox-line"></div>
+			</div>
+		</div>
+		<div class="bline">
+			<div class="btitle">运营走势</div>
+			<div class="btab zoom">
+				<span class="active">最近30天</span>
+				<span class="default">本月</span>
+			</div>
+			<div class="bbox">
+				<div class="bk" id="bk3"></div>
+				<div class="bbox-line"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+
+	//地图
+	function fn_map(data){
+		// 基于准备好的dom，初始化echarts实例
+		var myChart = echarts.init(document.getElementById('imap'));
+
+		myChart.setOption(option = {
+	        geo: {
+	            map: 'china',
+	            roam: false,
+	            label: {
+	                emphasis: {
+	                    show: false
+	                }
+	            },
+	            itemStyle: {
+	                normal: {
+	                    areaColor: "rgba(0,0,0,0.25)",
+	                    borderColor: '#2279b5'
+	                },
+	                emphasis: {
+	                    areaColor: 'rgba(34,121,181,0.4)'
+	                }
+	            },
+	            layoutCenter: ['44%', '53%'],
+	            layoutSize:600
+	        },
+	        series: [{
+	            name: '弱',
+	            type: 'scatterGL',
+	            coordinateSystem: 'geo',
+	            symbolSize: 1,
+	            itemStyle: {
+	                shadowBlur: 2,
+	                shadowColor: 'rgba(37, 140, 249, 0.8)',
+	                color: 'rgba(37, 140, 249, 0.8)'
+	            },
+	            data: weiboData[0]
+	        }, {
+	            name: '中',
+	            type: 'scatterGL',
+	            coordinateSystem: 'geo',
+	            symbolSize: 1,
+	            itemStyle: {
+	                shadowBlur: 2,
+	                shadowColor: 'rgba(14, 241, 242, 0.8)',
+	                color: 'rgba(14, 241, 242, 0.8)'
+	            },
+	            data: weiboData[1]
+	        }, {
+	            name: '强',
+	            type: 'scatterGL',
+	            coordinateSystem: 'geo',
+	            symbolSize: 1,
+	            itemStyle: {
+	                shadowBlur: 2,
+	                shadowColor: 'rgba(255, 255, 255, 0.6)',
+	                color: 'rgba(255, 255, 255, 0.6)'
+	            },
+	            data: weiboData[2]
+	        }]
+	    });
+	}
+
+	//饼图
+	function fn_bproportion(data){
+		// 基于准备好的dom，初始化echarts实例
+		var myChart = echarts.init(document.getElementById('bproportion'));
+
+		option = {
+			color:["rgba(18,229,212,1)","rgba(0,141,242,1)"],
+			series: [{
+				name: '值',
+				type: 'pie',
+				clockWise: false, //顺时加载
+				hoverAnimation: false, //鼠标移入变大
+				radius: [60, 60],
+				//startAngle: 60,
+				itemStyle: {
+					normal: {
+						label: {
+							show: true,
+						},
+						labelLine: {
+							show: true
+						},
+						//barBorderRadius: 10
+					}
+				},
+				data: [{
+					value: data.online,
+					name:"在线"+data.online+"%",
+					itemStyle: {
+						normal: {
+							borderWidth: 20,
+							borderColor: "rgba(18,229,212,1)"
+						}
+					}
+				}, {
+					value: data.offline,
+					name:"离线"+data.offline+"%",
+					itemStyle: {
+						normal: {
+							borderWidth: 10,
+							borderColor: "rgba(0,141,242,1)"
+						}
+					}
+				}
+				]
+			}]
+		};
+
+		myChart.setOption(option);
+	}
+
+	//k线图-1
+	function fn_mileage(data){
+		// 基于准备好的dom，初始化echarts实例
+		var myChart = echarts.init(document.getElementById('bk1'));
+
+		var showSymbol = false;//是否需要线上的点
+		if(data.data.length === 1)showSymbol = true;//是否需要线上的点
+
+		var option = {
+			color:["rgba(16,204,188,1)"],
+		    tooltip : {
+		        trigger: 'axis',
+		        axisPointer: {
+		            type: 'cross',
+		            label: {
+		                backgroundColor: 'rgba(15,191,177,1)'
+		            },
+		        },
+		    },
+		    grid: {
+		        left: 15,
+		        right: 20,
+		        top:20,
+		        bottom: 10,
+		        containLabel: true
+		    },
+		    xAxis :{
+	            type : 'category',
+	            boundaryGap : false,
+	            data : data.x,
+	            axisLine:{
+	            	lineStyle:{
+	            		color:"#ccc"
+	            	}
+	            }
+		    },
+		    yAxis :{
+	            type : 'value',
+	            splitLine: { show: false },
+	            axisLine:{
+	            	lineStyle:{
+	            		color:"#ccc"
+	            	}
+	            }
+		    },
+		    series : {
+		    	name:"公里",
+	            type:'line',
+	            smooth:true,
+	            showSymbol: showSymbol,//是否需要线上的点
+	            itemStyle:{
+	            	normal:{
+	            		borderWidth:3
+	            	}
+	            },
+	            lineStyle:{
+	            	normal:{
+	            		color:"rgba(18,229,212,1)",
+	            		width:1
+	            	}
+	            },
+	            areaStyle:{normal:{color:"rgba(18,229,212,0.2)"}},
+	            data:data.data
+	        }
+		    
+		};
+
+		myChart.setOption(option);
+	}
+
+	//k线图-2
+	function fn_time(data){
+		// 基于准备好的dom，初始化echarts实例
+		var myChart = echarts.init(document.getElementById('bk2'));
+
+		var showSymbol = false;//是否需要线上的点
+		if(data.data.length === 1)showSymbol = true;//是否需要线上的点
+
+		var option = {
+			color:["rgba(0,141,242,1)"],
+		    tooltip : {
+		        trigger: 'axis',
+		        axisPointer: {
+		            type: 'cross',
+		            label: {
+		                backgroundColor: 'rgba(0,141,242,1)'
+		            }
+		        },
+		    },
+		    grid: {
+		        left: 15,
+		        right: 20,
+		        top:20,
+		        bottom: 10,
+		        containLabel: true
+		    },
+		    xAxis :{
+	            type : 'category',
+	            boundaryGap : false,
+	            data : data.x,
+	            axisLine:{
+	            	lineStyle:{
+	            		color:"#ccc"
+	            	}
+	            }
+		    },
+		    yAxis :{
+	            type : 'value',
+	            splitLine: { show: false },
+	            axisLine:{
+	            	lineStyle:{
+	            		color:"#ccc"
+	            	}
+	            }
+		    },
+		    series : {
+		    	name:"分钟",
+	            type:'line',
+	            smooth:true,
+	            showSymbol: showSymbol,//是否需要线上的点
+	            itemStyle:{
+	            	normal:{
+	            		borderWidth:3
+	            	}
+	            },
+	            lineStyle:{
+	            	normal:{
+	            		color:"rgba(0,141,242,1)",
+	            		width:1
+	            	}
+	            },
+	            areaStyle:{normal:{color:"rgba(0,141,242,0.2)"}},
+	            data:data.data
+	        }
+		    
+		};
+
+		myChart.setOption(option);
+	}
+
+	//k线图-3
+	function fn_trend(data){
+		// 基于准备好的dom，初始化echarts实例
+		var myChart = echarts.init(document.getElementById('bk3'));
+
+		var showSymbol = false;//是否需要线上的点
+		if(data[0].data.length === 1)showSymbol = true;//是否需要线上的点
+
+		var option = {
+			color:["rgba(18,229,212,1)","rgba(0,141,242,1)"],
+		    tooltip : {
+		        trigger: 'axis',
+		        axisPointer: {
+		            type: 'cross',
+		            label: {
+		                backgroundColor: 'rgba(0,141,242,1)'
+		            }
+		        }
+		    },
+		    grid: {
+		        left: 15,
+		        right: 20,
+		        top:20,
+		        bottom: 10,
+		        containLabel: true
+		    },
+		    xAxis :{
+	            type : 'category',
+	            boundaryGap : false,
+	            data : data[0].x,
+	            axisLine:{
+	            	lineStyle:{
+	            		color:"#ccc"
+	            	}
+	            }
+		    },
+		    yAxis :{
+	            type : 'value',
+	            splitLine: { show: false },
+	            axisLine:{
+	            	lineStyle:{
+	            		color:"#ccc"
+	            	}
+	            }
+		    },
+		    series : [
+		    	{
+		    		name:"公里",
+		            type:'line',
+		            smooth:true,
+		            showSymbol: showSymbol,//是否需要线上的点
+		            itemStyle:{
+		            	normal:{
+		            		borderWidth:3
+		            	}
+		            },
+		            lineStyle:{
+		            	normal:{
+		            		color:"rgba(18,229,212,1)",
+		            		width:1
+		            	}
+		            },
+		            areaStyle:{normal:{color:"rgba(18,229,212,0.2)"}},
+		            data:data[0].data
+		        },
+		        {
+		        	name:"分钟",
+		            type:'line',
+		            smooth:true,
+		            showSymbol: showSymbol,//是否需要线上的点
+		            itemStyle:{
+		            	normal:{
+		            		borderWidth:3
+		            	}
+		            },
+
+		            lineStyle:{
+		            	normal:{
+		            		color:"rgba(0,141,242,1)",
+		            		width:1
+		            	}
+		            },
+		            areaStyle:{normal:{color:"rgba(0,141,242,0.2)"}},
+		            data:data[1].data
+		        },
+		    ]
+		    
+		};
+
+		myChart.setOption(option);
+	}
+
+	//ajax-loginOut
+	function ajax_logout(){
+		$.ajax({
+			url:'/api/user/logout.json',
+			type:'post',
+			dataType:'json',
+		}).then(function(data){
+			if(data.code === "0000"){
+				window.location.href="login.html";
+			}
+		});
+	}
+
+	//加载分数
+	function fn_score(num){
+		var n = 0;
+		(function fn_plus(){
+			if(n<num-8){
+				setTimeout(function(){
+					$("#soure").html(n);
+					n++;
+					if(n<=num)fn_plus();
+				},10);
+			}else if(n<num-4){
+				setTimeout(function(){
+					$("#soure").html(n);
+					n++;
+					if(n<=num)fn_plus();
+				},50);
+			}else if(n<num-2){
+				setTimeout(function(){
+					$("#soure").html(n);
+					n++;
+					if(n<=num)fn_plus();
+				},200);
+			}else{
+				setTimeout(function(){
+					$("#soure").html(n);
+					n++;
+					if(n<=num)fn_plus();
+				},400);
+			}
+		})();
+	}
+
+	var json;
+	//获取首页数据
+	function ajax_get_homepage_data(){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_homepage_data2',
+			type:"post",
+			dataType:"json",
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			}
+		}).then(function(data){
+			if(data.code === "0000"){
+				json = data.data;
+				fn_score(json.score);//加载分数				
+				fn_bproportion(json.bproportion);
+				fn_mileage(json.mileage.days30);
+				fn_time(json.time.days30);
+				fn_trend(json.trend.days30);
+			}
+		});
+	}
+
+	$(function(){
+		ajax_get_homepage_data();//获取首页数据
+		fn_map();//地图
+
+		//点击切换标签
+		$(".btab span").click(function(){
+			var _this = $(this);
+			$(this).parent().find("span").each(function(idx,el){
+				$(this).attr("class","default");
+			});
+			_this.addClass("active");
+
+			var _name = _this.parent().siblings(".btitle").html();//图表标识
+			var _sign = _this.html();//选项卡标识
+			var _data;
+			if(_name === "运行平均里程"){
+				if(_sign === "最近30天"){
+					_data = json.mileage.days30;
+				}else{
+					_data = json.mileage.month;
+				}
+				fn_mileage(_data);
+			}else if(_name === "运行平均时长"){
+				if(_sign === "最近30天"){
+					_data = json.time.days30;
+				}else{
+					_data = json.time.month;
+				}
+				fn_time(_data);
+			}else if(_name === "运营走势"){
+				if(_sign === "最近30天"){
+					_data = json.trend.days30;
+				}else{
+					_data = json.trend.month;
+				}
+				fn_trend(_data);
+			}
+		});
+	});
+</script>

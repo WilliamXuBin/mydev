@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Xenon Boostrap Admin Panel" />
+<meta name="author" content="" />
+<title id="w_tle">友邦BMS管理系统</title>
+<link type="image/x-icon" rel="shortcut icon" href="img/logo/logo.png">
+<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.0.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.bootcss.com/animate.css/3.5.2/animate.css">
+<link href="https://cdn.bootcss.com/Swiper/4.0.7/css/swiper.min.css" rel="stylesheet">
+<link rel="stylesheet" href="neplayer/neplayer.min.css">
+<link rel="stylesheet" href="mediaelement/mediaelementplayer.css" />
+<link rel="stylesheet" href="assets/css/xenon-components.css">
+<link rel="stylesheet" href="assets/css/xenon-core.css">
+<link rel="stylesheet" href="app/src/css/style.css">
+<link rel="stylesheet" href="app/src/css/loading.css">
+<link rel="stylesheet" href="layui/css/layui.css">
+<script src="detector/detector.js"></script>
+<script type="text/javascript">
+	var window_explorer = "";
+	//浏览器版本判断：隔离浏览器：ie5\6\7\8\9
+	(function getExplorer() {
+	    var explorer = window.navigator.userAgent ;
+	    //ie 
+	    if (explorer.indexOf("MSIE") >= 0) {
+	        var ieNum = explorer.substr(explorer.indexOf("MSIE")+5,1);
+	        if(ieNum == '11'){
+	            
+	        }else{
+	            window.location.href = '404.html';
+	            return;
+	        }
+	    }
+	    //edge 
+	    else if (explorer.indexOf("Edge") >= 0) {
+	        console.log("Edge");
+	        window_explorer = "Edge";
+	        window.location.href = '404.html';
+	    }
+	    //firefox 
+	    else if (explorer.indexOf("Firefox") >= 0) {
+	        console.log("Firefox");
+	    }
+	    //Chrome
+	    else if(explorer.indexOf("Chrome") >= 0){
+	        console.log("Chrome");
+	    }
+	    //Opera
+	    else if(explorer.indexOf("Opera") >= 0){
+	        console.log("Opera");
+	    }
+	    //Safari
+	    else if(explorer.indexOf("Safari") >= 0){
+	        console.log("Safari");
+	        window_explorer="Safari";
+	    }
+	    
+	})()
+
+	function IsPC() {
+	    var userAgentInfo = navigator.userAgent;
+	    var Agents = ["Android", "iPhone",
+	                "SymbianOS", "Windows Phone",
+	                "iPad", "iPod"];
+	    var flag = true;
+	    for (var v = 0; v < Agents.length; v++) {
+	        if (userAgentInfo.indexOf(Agents[v]) > 0) {
+	            flag = false;
+	            break;
+	        }
+	    }
+	    return flag;
+	}
+
+	var flag = IsPC(); //true为PC端，false为手机端
+	if(!flag)window.location.href="isPhone.html";
+
+	if ( ! Detector.webgl ){
+		window.location.href="webgl.html";
+	}
+</script>
+<style>
+
+</style>
+<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+	<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+<script src="https://cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+<!--加载动画-->
+<div class="page-loading-overlay">
+	<div class="loader-2"></div>
+</div>
+
+<!--<div id="loadingBegin"><div class="spinner"><div class="double-bounce1"></div><div class="double-bounce2"></div></div></div>-->
+<script src="assets/js/xenon-custom.js"></script>
+
+<div class="navBar">
+	<div class="navBar-main zoom">
+		<div class="navBar-logo">
+			<img src="/img/index/logo.png">
+		</div>
+		<ul class="navBar-list zoom"></ul>
+		<div class="navBar-outlogin">
+			<div class="navBar-outlogin-title zoom">
+				<img src="/img/logo/tongyi.jpg">
+				<span id="login_name"></span>
+			</div>
+			<ul>
+				<li id="outlogin">退出</li>
+			</ul>
+		</div>
+		<div class="navBar-warning"><span></span></div>
+	</div>
+	<div class="navBar-tab">
+		<div class="navBar-tab-main zoom"></div>
+	</div>
+	<div class="navBar-breadcrumbs">
+		<div class="navBar-breadcrumbs-main zoom"></div>
+	</div>
+	<div class="navBar-warn">未查询到轨迹</div>
+</div>
+<div class="mainBlock"></div>
+
+<audio src="other/7815.mp3" controls="controls" id="bgMusic" style="position:absolute;bottom:0px;left:0px;opacity:0;z-index:-1;"></audio>
+
+<script type="text/javascript" src="http://jssdk-v2.demo.qiniu.io/dist/qiniu.min.js"></script>
+<script src="https://cdn.bootcss.com/echarts/4.0.4/echarts.min.js"></script>
+<script src="echarts_china/china.js"></script>
+<script src="chart_data/index/echarts-gl.js"></script>
+<script src="chart_data/index/data.js"></script>
+
+<script src="assets/js/resizeable.js"></script>
+<script src="assets/js/TweenMax.min.js"></script>
+<script src="assets/js/xenon-api.js"></script>
+<script src="assets/js/toastr/toastr.min.js"></script>
+
+<script src="neplayer/neplayer.min.js"></script>
+<script src="mediaelement/mediaelement-and-player.js"></script>
+
+<script type="text/javascript" src="laydate/laydate.js"></script>
+<script type="text/javascript" src="layui/layui.js"></script><!--分页-->
+
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.3&key=09963151ec2161e80be7a4de745484cc&plugin=AMap.Autocomplete,AMap.PlaceSearch,AMap.PolyEditor,AMap.CircleEdito,AMap.Driving,AMap.ControlBar,AMap.Geocoder"></script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.3&key=09963151ec2161e80be7a4de745484cc&plugin=AMap.Autocomplete,AMap.PlaceSearch,AMap.PolyEditor,AMap.CircleEdito,AMap.Driving,AMap.ControlBar,AMap.Geocoder"></script>
+<script src="//webapi.amap.com/ui/1.0/main.js"></script>
+<script src="https://cdn.bootcss.com/Swiper/4.0.7/js/swiper.min.js"></script>
+
+<script src="//cdn.bootcss.com/js-cookie/2.1.2/js.cookie.min.js"></script>
+<script src="app/src/js/tool.js"></script>
+<script src="app/src/js/index.js"></script>
+<!--
+<script src="app/src/js/tool/tool.js"></script>
+<script src="app/src/js/tool/tool_assembly.js"></script>
+<script src="app/src/js/tool/tool_fun.js"></script>
+<script src="app/src/js/tool/tool_map.js"></script>
+<script src="app/src/js/tool/tool_system.js"></script>
+-->
+</body>
+</html>

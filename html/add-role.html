@@ -1,0 +1,379 @@
+<style>
+	.userBlock{width:400px;margin:200px auto;}
+    .userBlock-item{margin-bottom:10px;}
+    .userBlock-item-title{width:90px;height:38px;line-height:38px;float:left;}
+    .userBlock-item-content{width:300px;line-height:38px;float:right;border-bottom:1px solid rgba(255,255,255,0.1);}
+    .userBlock-item-text{width:300px;height:38px;border:none;background:none;color:#fff;padding:0 20px;}
+    .userBlock-default .userBlock-item-title,.userBlock-default .userBlock-item-content,.userBlock-default .userBlock-item-text{color:#fff;}
+    .userBlock-disable .userBlock-item-title,.userBlock-disable .userBlock-item-content,.userBlock-disable .userBlock-item-text{color:#8c8c8c;}
+
+    .tselect-title{background:none;}
+    .role{margin-top:4px;}
+    .role-item{}
+    .role-item-title{position:relative;}
+    .role-item-icon{width:23px;height:30px;float:left;background-repeat:no-repeat;background-position:left center;position:relative;}
+    .role-item-box{float:left;}
+    .role-item input{position:absolute;top:0px;left:0px;opacity:0;z-index:-1;}
+    .role-item label{display:block;height:30px;line-height:30px;margin-bottom:0px;background-image:url("img/icon/checkbox_white.png");background-repeat:no-repeat;background-position:left center;padding-left:20px;}
+    .role .plus{background-image:url('img/carNar/plus.png');}
+    .role .minus{background-image:url('img/carNar/minus.png');}
+    .role-item .default{background-image:url('img/icon/checkbox_white.png');}
+    .role-item .half{background-image:url('img/icon/checkbox_white_half.png');}
+    .role-item .active{background-image:url('img/icon/checkbox_white_ed.png');}
+    .role-item ul{margin-left:20px;display:none;}
+    .role-item ul li{position:relative;}
+</style>
+
+<div class="userBlock">
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">角色名称：</div>
+        <div class="userBlock-item-content"><input type="text" class="userBlock-item-text urequired" id="roleName" d-error="请输入角色名称" /></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">角色类型：</div>
+        <div class="userBlock-item-content"><div id="sel_role" class="urequired-sel" d-error="请选择角色类型"></div></div>
+    </div>
+    <div class="userBlock-item zoom userBlock-default">
+        <div class="userBlock-item-title">角色权限：</div>
+        <div class="userBlock-item-content" style="border:none;">
+            <div class="role"></div>
+        </div>
+    </div>
+    <div class="userBlock-item" style="margin-top:50px;">
+        <button class="dbtn" id="btn_role_add">确定</button>
+    </div>
+</div>
+    
+<script type="text/javascript">
+    var sel_role;
+
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"角色管理",href:"role-management"},
+        {name:"添加角色"},
+    ]);
+
+    var json = [
+        {
+            "name": "首页",
+            "href": "index"
+        },
+        {
+            "name": "智慧交通",
+            "href": "intelligent-traffic"
+        },
+        {
+            "name": "业务管理",
+            "href": "transportation",
+            "items": [
+                {
+                    "name": "运输管理平台",
+                    "href": "transportation"
+                },
+                {
+                    "name": "运力交易平台",
+                    "href": "capacity"
+                }
+            ]
+        },
+        {
+            "name": "监控管理",
+            "href": "car",
+            "cls": "fa-eye",
+            "items": [
+                {
+                    "name": "车辆定位",
+                    "href": "car"
+                },
+                {
+                    "name": "轨迹管理",
+                    "href": "trajectory"
+                },
+                {
+                    "name": "电子围栏 ",
+                    "href": "fence"
+                },
+                {
+                    "name": "实时监控",
+                    "href": "realtime-monitor"
+                }
+            ]
+        },
+        {
+            "name": "安全中心",
+            "href": "data-single",
+            "items": [
+                {
+                    "name": "单车实时监控",
+                    "href": "data-single"
+                },
+                {
+                    "name": "总体安全监控",
+                    "href": "monitor"
+                },
+                {
+                    "name": "今日高危车辆",
+                    "href": "dangerous-car"
+                },
+                {
+                    "name": "当前行驶车辆",
+                    "href": "running-car"
+                },
+                {
+                    "name": " 途中危险场景",
+                    "href": "dangerous-scene"
+                },
+                {
+                    "name": " 今日不安全事件",
+                    "href": "unsafe-incident"
+                }
+            ]
+        },
+        {
+            "name": "分析中心",
+            "href": "vehiclemileag-analysis",
+            "items": [
+                {
+                    "name": "里程统计",
+                    "href": "vehiclemileag-analysis"
+                },
+                {
+                    "name": "停车统计",
+                    "href": "vehiclestop-analysis"
+                },
+                {
+                    "name": "速度统计",
+                    "href": "vehiclespeed-analysis"
+                },
+                {
+                    "name": "超速统计",
+                    "href": "vehicleoverspeed-analysis"
+                },
+                {
+                    "name": "电子围栏出入统计",
+                    "href": "electricfence-analysis"
+                },
+                {
+                    "name": "区域围栏出入统计",
+                    "href": "regionfence-analysis"
+                }
+            ]
+        },
+        {
+            "name": "系统中心",
+            "href": "user",
+            "items": [
+                {
+                    "name": "用户管理",
+                    "href": "user"
+                }
+            ]
+        }
+    ];
+
+    function fn(items){
+        var html = "";
+
+        items.forEach(function(el,index){
+            var html_child = '';
+            var childNodes = "";
+            if(el.items && el.items.length>0){
+                childNodes = "d-childNodes=has";
+                el.items.forEach(function(el_child,index_child){
+                    var id = index+""+index_child;
+                    html_child += `
+                        <li><input type="checkbox" class="checkbox_second" id="`+id+`" d-href="`+el_child.href+`" /><label for="`+id+`">`+el_child.name+`</label></li>
+                    `;
+                });
+            }
+            
+            html += `
+                <div class="role-item zoom">
+                    <div class="role-item-icon plus"></div>
+                    <div class="role-item-box">
+                        <div class="role-item-title">
+                            <input type="checkbox" class="checkbox_first" id="`+index+`" d-href="`+el.href+`" `+childNodes+` /><label for="`+index+`" class="default">`+el.name+`</label>
+                        </div>
+                        <ul>`+html_child+`</ul>
+                    </div>
+                </div>
+            `;
+        });
+
+        $(".role").html(html);
+    }
+    fn(json);
+
+    //ajax-add role
+    function ajax_add_role(data){
+        $.ajax({
+            url:'https://api0.youbanganda.com/add_role',
+            type:'post',
+            dataType:'json',
+            data:data,
+        }).then(function(data){
+            if(data.code === "0000"){
+                new msgAlert({info:data.message,num:1}).on('btnOkClick',function(){
+                    //ajax_nav("user");
+                });
+            }
+        });
+    }
+
+    //ajax-角色列表
+    function ajax_get_role_list(){
+        $.ajax({
+            url:'https://api0.youbanganda.com/get_role_type_list',
+            type:'post',
+            dataType:'json',
+            data:{
+                role_id:info_login.data.roleid,
+            }
+        }).then(function(data){
+            if(data.code === "0000"){
+                var items = data.data;
+                var options = [{name:"请选择",val:""}];
+                items.forEach(function(el,index){
+                    options.push({name:el.name,val:el.val});
+                });
+                sel_role = new fn_tselect({elem:$("#sel_role"),options:options});
+            }
+        });
+    }
+
+    $(function () {
+        ajax_get_role_list();//ajax-角色列表
+
+        //click plus/minus
+        $(document).off("click",".role-item-icon").on("click",".role-item-icon",function(){
+            var _this = $(this);
+            var cls = _this.hasClass("plus");
+            if(cls){
+                _this.removeClass("plus").addClass("minus");
+                _this.siblings(".role-item-box").find("ul").show();
+            }else{
+                _this.removeClass("minus").addClass("plus");
+                _this.siblings(".role-item-box").find("ul").hide();
+            }
+        });
+
+        //click first checkbox
+        $(document).off("click",".checkbox_first").on("click",".checkbox_first",function(){
+            var _this = $(this);
+            if(_this.is(':checked')){
+                _this.siblings("label").attr("class","active");
+                check_all(true);
+            }else{
+                if(_this.siblings("label").hasClass("half")){
+                    _this.siblings("label").attr("class","active");
+                    check_all(true);
+                    _this.prop("checked",true);
+                }else{
+                    _this.siblings("label").attr("class","default");
+                    check_all(false);
+                }
+            }
+
+            function check_all(sign){
+                var li = _this.parent().siblings("ul").find("li").find("input[type='checkbox']");
+                li.each(function(index,el){
+                    if(sign){
+                        el.checked = true;
+                        li.siblings("label").attr("class","active");
+                    }else{
+                        el.checked = false;
+                        li.siblings("label").attr("class","default");
+                    }
+                });
+            }
+        });
+
+        //click second checkbox
+        $(document).off("click",".checkbox_second").on("click",".checkbox_second",function(){
+            var _this = $(this);
+            if(_this.is(':checked')){
+                _this.siblings("label").attr("class","active");
+            }else{
+                _this.siblings("label").attr("class","default");
+            }
+
+            check_li();
+
+            function check_li(){
+                var li = _this.parent().parent().find("li");
+                var sign = [];
+                li.each(function(index,el){if(li.eq(index).find("input").is(":checked"))sign.push(index);});
+
+                var len = li.length;
+                var obj = _this.parent().parent().siblings(".role-item-title");
+                if(sign.length === len){
+                    obj.find("input[type='checkbox']").prop("checked","checked");
+                    obj.find("label").attr("class","active");
+                }else if(sign.length > 0 && sign.length < len){
+                    obj.find("input[type='checkbox']").prop("checked","checked");
+                    obj.find("label").attr("class","half");
+                }else{
+                    obj.find("input[type='checkbox']").prop("checked",false);
+                    obj.find("label").attr("class","default");
+                }
+            }
+        });
+
+        //按钮点击
+        $(document).off("click","#btn_role_add").on("click","#btn_role_add",function(){
+            var roleName = $("#roleName").val();
+            var type = sel_role.value;
+            var arr = [];
+            var checkbox_first = $(".checkbox_first");
+            checkbox_first.each(function(index,el){
+                if(el.checked){
+                    var isChildNodes = el.hasAttribute("d-childNodes");
+                    var arr_child = [];
+                    if(isChildNodes){
+                        var checkbox_second = checkbox_first.eq(index).parent().siblings("ul").find(".checkbox_second");
+                        checkbox_second.each(function(index_child,el_child){
+                            if(!el_child.checked)return;
+                            var name_child = checkbox_second.eq(index_child).parent().find("label").html();
+                            var href_child = el_child.getAttribute("d-href");
+                            arr_child.push({name:name_child,href:href_child});
+                        });
+                    }
+
+                    var name = checkbox_first.eq(index).parent().find("label").html();
+                    var href = el.getAttribute("d-href");
+                    var obj = {name:name,href:href};
+                    if(arr_child.length>0)obj.items = arr_child;
+                    arr.push(obj);
+                }
+            });
+            console.log(arr)
+
+            if(!roleName){
+                toastr.error('请输入角色名称');//提示框
+                return;
+            }
+
+            if(!type){
+                toastr.error('请输入角色类型');//提示框
+                return;
+            }
+
+            if(arr.length === 0){
+                toastr.error('请配置角色权限');//提示框
+                return;
+            }
+
+            var postData = {
+                role_name:roleName,
+                display:JSON.stringify(arr),
+                type:type
+            };
+            ajax_add_role(postData);
+        });
+    });
+</script>
+
+
+
+

@@ -1,0 +1,230 @@
+<style>
+    .mngCar{margin:100px 20px;width:auto;}
+    .mngCar-nav ul li .icon1{background-image:url('img/mng/car/carBase.png');}
+    .mngCar-nav ul li .icon2{background-image:url('img/mng/car/transport.png');}
+    .mngCar-nav ul li .icon3{background-image:url('img/mng/car/policy.png');}
+    .mngCar-nav ul li .icon4{background-image:url('img/mng/car/other.png');}
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-btn zoom">
+        <button class="moperation-btn moperation-add icon-add" id="add">添加</button>
+        <button class="moperation-btn moperation-remove icon-remove" id="remove">删除</button>
+    </div>
+    <div class="mngCar-nav">
+        <ul class="zoom">
+            <li class="online"><span class="icon1" d-type="driver">司机基本信息</span></li>
+            <li class="default"><span class="icon2" d-type="certificates">驾驶证信息</span></li>
+        </ul>
+    </div>
+
+    <table class="ttable" id="ttable"></table>
+    <div id="pageDemo"></div>
+</div>
+
+
+<script type="text/javascript">
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"司机信息"},
+    ]);
+
+    var tt = {
+        elem:$("#ttable"),
+        titles:['checkbox','姓名','性别','手机号码','身份证号','出生日期','籍贯','家庭住址','备注信息','操作'],
+        items:"请选择条件查询",
+    };
+    var ttable = new fn_ttable(tt);
+
+    function ajax_get_driver_info_list(set){
+        $.ajax({
+            url:ajax_106+"/get_driver_info_list",
+            type:"post",
+            dataType:"json",
+            data:set
+        }).then(function(data){
+            if(data.code === "0000"){
+                data = data.data;
+                if(pageSign===1){
+                    pageSign++;
+                    new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_get_driver_info_list,set:set});//初始化分页
+                }
+
+                if(set.type == "1"){
+                    fn_list_1(data.items,"mng_car_driver");
+                }else if(set.type == "2"){
+                    fn_list_2(data.items,"mng_car_driver");
+                }
+            }
+        });
+    }
+
+    function fn_list_1(items,sign){
+        if(items === "loading"){
+            ttable.init({items:"加载中……"});
+            return;
+        }
+
+        if(!items || items.length==0){
+            ttable.init({items:[]});
+            return;
+        }
+
+        if(sign != "mng_car_driver")return;
+
+        data_rank = items;
+
+        var items = fn_format_arr(items);
+
+        var arr = [];
+        items.forEach(function(el,index){
+            index++;
+            var hover_data = {
+                id:el.id
+            };
+            var html_operation = '<a class="hover" d-data=\''+JSON.stringify(hover_data)+'\'>查看编辑</a>';
+            var obj = {tds:[
+                '<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+                el.driver_name,
+                el.gender,
+                el.phone,
+                el.id_number,
+                el.birthdate,
+                el.origin,
+                el.address,
+                el.information,
+                html_operation,
+            ]};
+            arr.push(obj);
+        });
+        ttable.init({items:arr});
+    }
+
+    function fn_list_2(items,sign){
+        if(items === "loading"){
+            ttable.init({items:"加载中……"});
+            return;
+        }
+
+        if(!items || items.length==0){
+            ttable.init({items:[]});
+            return;
+        }
+
+        if(sign != "mng_car_driver")return;
+
+        data_rank = items;
+
+        var items = fn_format_arr(items);
+
+        var arr = [];
+        items.forEach(function(el,index){
+            index++;
+            var hover_data = {
+                id:el.id
+            };
+            var html_operation = '<a class="hover" d-data=\''+JSON.stringify(hover_data)+'\'>查看编辑</a>';
+            var obj = {tds:[
+                '<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+                el.driver_name,
+                el.license_number,
+                el.license_grade,
+                el.license_date,
+                el.driver_qualification,
+                el.ic_card,
+                html_operation,
+            ]};
+            arr.push(obj);
+        });
+        ttable.init({items:arr});
+    }
+
+    var pageSign = 1;//分页需要的参数
+    var curr = 1;//分页当前页
+    var data_set = {
+        extra_id:info_login.data.extraid,
+        type:1,
+        page:1,
+        interval:10,
+    };
+    ajax_get_driver_info_list(data_set);
+
+    function ajax_delete_driver_info(id){
+        $.ajax({
+            url:ajax_106+"/delete_driver_info",
+            type:"post",
+            dataType:"json",
+            data:{driver_info_ids:id}
+        }).then(function(data){
+            if(data.code === "0000"){
+                pageSign = 1;//分页需要的参数
+                curr = 1;//分页当前页
+                data_set.page = 1;
+                ajax_get_driver_info_list(data_set);
+                toastr.success(data.message);
+            }
+        });
+    }
+
+    $(function(){
+        $(document).off("click",".mngCar-nav li").on("click",".mngCar-nav li",function(){
+            $(".mngCar-nav li").attr("class","default");
+            $(this).attr("class","online");
+            var sign = $(this).find("span").html();
+            if(sign === "司机基本信息"){
+                tt = {
+                    elem:$("#ttable"),
+                    titles:['checkbox','姓名','性别','手机号码','身份证号','出生日期','籍贯','家庭住址','备注信息','操作'],
+                    items:"请选择条件查询",
+                };
+                data_set = {
+                    extra_id:info_login.data.extraid,
+                    type:1,
+                    page:1,
+                    interval:10,
+                };
+                ajax_get_driver_info_list(data_set);
+            }else if(sign === "驾驶证信息"){
+                tt = {
+                    elem:$("#ttable"),
+                    titles:['checkbox','姓名','驾驶证号','驾驶证等级','驾照考取日','司机IC卡号','驾驶员从业资格证号','操作'],
+                    items:"请选择条件查询",
+                };
+                data_set = {
+                    extra_id:info_login.data.extraid,
+                    type:2,
+                    page:1,
+                    interval:10,
+                };
+                ajax_get_driver_info_list(data_set);
+            }
+            ttable = new fn_ttable(tt);
+        });
+
+        $(document).off("click","#remove").on("click","#remove",function(){
+            var arr = ttable.checked();
+            if(arr.length == 0){
+                toastr.error("请选择需要删除的项");
+                return;
+            }
+            arr = JSON.stringify(arr);
+            ajax_delete_driver_info(arr);
+            console.log(arr)
+        });
+
+        //跳转页面
+        $(document).off("click","#add").on("click","#add",function(){
+            ajax_nav("mng-car-driver-add");
+        });
+
+        $(document).off("click",".hover").on("click",".hover",function(){
+            window.sessionStorage.info_mngCarDriver = $(this).attr("d-data");
+            ajax_nav("mng-car-driver-edit");
+        });
+    });
+</script>
+
+
+

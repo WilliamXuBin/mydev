@@ -1,0 +1,179 @@
+<style>
+#pageDemo{margin-top:10px;text-align:center;}
+.moperation{margin-top:40px;}
+.ttable{margin:10px 0;}
+</style>
+
+<div class="analysis">
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">角色名称</div>
+			<div class="singleMenu-item-content">
+				<input type="text" class="dtext" id="searchUser" />
+			</div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="btn_role">确定</button></div>
+	</div>
+	
+	<div class="moperation zoom">
+		<button class="moperation-btn moperation-btn-icon icon-add" id="add_role">添加</button>
+		<button class="moperation-btn moperation-btn-icon icon-remove" id="remove_role">删除</button>
+		<button class="moperation-btn moperation-btn-icon icon-edit" id="edit_role">编辑</button>
+	</div>
+
+	<table class="ttable" id="ttable"></table>
+	<div id="pageDemo"></div>
+</div>
+
+<script type="text/javascript">
+clearTimer();//清除定时器
+
+var tt = {
+	elem:$("#ttable"),
+	titles:['checkbox','角色名称','权限','修改人','修改时间'],
+	items:"请选择条件查询",
+};
+var ttable = new fn_ttable(tt);
+
+if(info_login.data.extraid == 1)$(".breadcrumb").remove();
+
+$(function(){
+	var pageSign = 1;//分页需要的参数
+
+	var curr = 1;//分页当前页
+	var data_set = {
+		username:"",
+		realname:"",
+		page:1,
+		interval:10,
+	};
+	//ajax-搜索或获取全部用户
+	function ajax_post(set){
+		fn_list("loading");
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_role_table_list',
+			type:'post',
+			dataType:'json',
+			data:{
+				page:set.page,
+				interval:set.interval,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_post,set:set});//初始化分页
+				}
+				
+				fn_list(data);
+			}
+		});
+	}
+	ajax_post(data_set);
+
+	function fn_list(items){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+		
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			var obj = {tds:[
+				'<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+				el.name,
+				'--',
+				'--',
+				el.updatetime,
+			]};
+			arr.push(obj);
+		});
+
+		ttable.init({items:arr});
+	}
+
+	//ajax-delectList
+	function ajax_del(id){
+		$.ajax({
+			url:ajax_139+'/api/user/del.json',
+			type:'post',
+			dataType:'json',
+			headers:{token:info_login.data.token},
+			data:{id:id},
+			traditional: true,//这里设置为true
+		}).then(function(data){
+			if(data.code === "0000"){
+				data_set.page = curr;
+				ajax_post(data_set);
+			}
+		});
+	}
+
+	//点击删除
+	$(document).off('click','#remove_role').on('click','#remove_role',function(){
+		var arr = ttable.checked();
+
+		if(arr.length===0){
+			toastr.info('请勾选列表')//提示框
+			return false;
+		}else{
+			new msgAlert({info:'确定要删除此条信息？删除后无法恢复。'}).on('btnOkClick',function(){
+				pageSign = 1;//分页需要的参数
+				curr = 1;//分页当前页
+
+				ajax_del("["+arr.join(",")+"]");//ajax-delectList
+			});
+		}
+	});
+
+    //点击添加
+    $(document).off('click','#add_role').on('click','#add_role',function(){
+    	ajax_nav("add-role");
+    });
+    
+	//修改时控制复选框只能选中一条数据
+	$(document).off('click','#edit_role').on('click','#edit_role',function(){
+		var arr = ttable.checked();
+
+		if(arr.length===0 || arr.length>1){
+			toastr.info('只能操作一条数据，请重新选择')//提示框
+		}else{
+			window.localStorage.id = arr[0];//保存ID
+			ajax_nav("modify-user");
+		}
+	});
+	    	      
+	//全选按钮事件
+	var $state = $("#example-2 thead input[type='checkbox']");
+	$state.on('change', function(ev){
+		var $chcks = $("#example-2 tbody input[type='checkbox']");
+
+		if($state.is(':checked')){
+			$chcks.prop('checked', true).trigger('change');
+		}else{
+			$chcks.prop('checked', false).trigger('change');
+		}
+	});
+
+	$(document).off("click","#btn_role").on("click","#btn_role",function(){
+		var user = $("#searchUser").val();//获取登录名
+		var name = $("#searchName").val();//获取用户名
+
+		pageSign = 1;//分页需要的参数
+		curr = 1;//分页当前页
+
+		data_set.username = user;
+		data_set.realname = name;
+		ajax_post(data_set);//初始化列表
+	});
+});
+</script>

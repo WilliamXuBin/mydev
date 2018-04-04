@@ -1,0 +1,181 @@
+<style>
+#pageDemo{margin-top:10px;text-align:center;}
+.moperation{}
+.ttable{margin:10px 0;}
+</style>
+
+<div class="analysis">
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">登录名</div>
+			<div class="singleMenu-item-content" style="">
+				<input type="text" class="dtext" placeholder="" id="searchUser" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">用户名</div>
+			<div class="singleMenu-item-content" style="">
+				<input type="text" class="dtext" placeholder="" id="searchName" />
+			</div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="btn_user">确定</button></div>
+	</div>
+		
+	<table class="ttable" id="ttable"></table>
+	<div class="moperation zoom">
+		<button class="moperation-btn" id="add_user">添加</button>
+		<button class="moperation-btn" id="remove_user">删除</button>
+		<button class="moperation-btn" id="edit_user">编辑</button>
+	</div>
+	<div id="pageDemo"></div>
+</div>
+
+<script type="text/javascript">
+clearTimer();//清除定时器
+
+var tt = {
+	elem:$("#ttable"),
+	titles:['checkbox','登录名','用户名','角色','手机号码','修改人','修改时间'],
+	items:"请选择条件查询",
+};
+var ttable = new fn_ttable(tt);
+
+if(info_login.data.extraid == 1)$(".breadcrumb").remove();
+
+$(function(){
+	var pageSign = 1;//分页需要的参数
+
+	var curr = 1;//分页当前页
+	var data_set = {
+		username:"",
+		realname:"",
+		page:1,
+		interval:10,
+	};
+	//ajax-搜索或获取全部用户
+	function ajax_post(set){
+		fn_list("loading");
+		curr = set.page;//分页当前页
+		$.ajax({
+			url:ajax_106+'/search_or_get_all_user',
+			type:'post',
+			dataType:'json',
+			data:{
+				username_key:set.username,
+				realname_key:set.realname,
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+				page:set.page,
+				interval:set.interval,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_post,set:set});//初始化分页
+				}
+				
+				fn_list(data.items);
+			}else{
+				fn_list([]);
+			}
+		});
+	}
+	ajax_post(data_set);
+
+	function fn_list(items){
+		if(items === "loading"){
+			ttable.init({items:"加载中……"});
+			return;
+		}
+		
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+
+		var items = fn_format_arr(items);
+
+		var arr = [];
+		items.forEach(function(el,index){
+			var obj = {tds:[
+				'<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+				el.username,
+				el.realname,
+				el.rolename,
+				el.phone,
+				el.updateby,
+				el.updatetime,
+			]};
+			arr.push(obj);
+		});
+
+		ttable.init({items:arr});
+	}
+
+	//ajax-delectList
+	function ajax_del(id){
+		$.ajax({
+			url:ajax_139+'/api/user/del.json',
+			type:'post',
+			dataType:'json',
+			headers:{token:info_login.data.token},
+			data:{id:id},
+			traditional: true,//这里设置为true
+		}).then(function(data){
+			if(data.code === "0000"){
+				data_set.page = curr;
+				ajax_post(data_set);
+			}
+		});
+	}
+
+	//点击删除
+	$(document).off("click","#remove_user").on("click","#remove_user",function(){
+		var arr = ttable.checked();
+
+		if(arr.length===0){
+			toastr.info('请勾选列表')//提示框
+			return false;
+		}else{
+			new msgAlert({info:'确定要删除此条信息？删除后无法恢复。'}).on('btnOkClick',function(){
+				pageSign = 1;//分页需要的参数
+				curr = 1;//分页当前页
+
+				ajax_del("["+arr.join(",")+"]");//ajax-delectList
+			});
+		}
+	});
+
+    //点击添加
+    $(document).off("click","#add_user").on("click","#add_user",function(){
+    	ajax_nav("add-user");
+    });
+    
+	//修改时控制复选框只能选中一条数据
+	$(document).off("click","#edit_user").on("click","#edit_user",function(){
+		var arr = ttable.checked();
+
+		if(arr.length===0 || arr.length>1){
+			toastr.info('只能操作一条数据，请重新选择')//提示框
+		}else{
+			window.localStorage.id = arr[0];//保存ID
+			ajax_nav("modify-user");
+		}
+	});
+
+	$(document).off("click","#btn_user").on("click","#btn_user",function(){
+		var user = $("#searchUser").val();//获取登录名
+		var name = $("#searchName").val();//获取用户名
+
+		pageSign = 1;//分页需要的参数
+		curr = 1;//分页当前页
+
+		data_set.username = user;
+		data_set.realname = name;
+		data_set.page = 1;
+		ajax_post(data_set);//初始化列表
+	});
+});
+</script>

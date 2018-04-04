@@ -1,0 +1,378 @@
+<style>
+
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-main"></div>
+    <div class="mngCar-add-btn"><button class="moperation-btn" id="save">确定</button></div>
+</div>
+
+<script type="text/javascript">
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"车辆信息",href:"mng-car-info"},
+        {name:"编辑车辆"},
+    ]);
+    
+    var data_attribute = [{name:"请选择",val:""}];//车辆属性
+    var data_company_id = [{name:"请选择",val:""}];//所属公司
+    var data_motorcade = [{name:"请选择",val:""}];//所属车队
+    var data_status = [{name:"请选择",val:""}];//车辆状态
+    var data_brand = [{name:"请选择",val:""}];//车辆品牌
+    var data_type_car = [{name:"请选择",val:""}];//车辆类型
+    var data_type_idCode = [{name:"请选择",val:""}];//证件类型
+    var data_type_repair = [{name:"请选择",val:""}];//维修类型
+    var data_type_maintain = [{name:"请选择",val:""}];//保养类型
+    var data_gread = [{name:"请选择",val:""}];//驾驶证等级
+
+    // var menu_data = {
+    //     vehicle_info:"沪A12345",
+    //     vehicle_attributes:"自有车辆",
+    //     company_id:"",
+    //     motorcade_id:"111",
+    //     monitoring_company:"monitoring_company",
+    //     vehicle_status:"维修中",
+    //     main_driver:"main_driver",
+    //     assistant_driver:"assistant_driver",
+    //     etc_number:"etc_number",
+    //     oil_wear_100:"oil_wear_100",
+
+    //     vehicle_brand:"雷诺",
+    //     vehicle_type:"大型客车",
+    //     vehicle_model:"vehicle_model",
+    //     vehicle_horsepower:"vehicle_horsepower",
+    //     persons_capacity:"persons_capacity",
+    //     engine_number:"engine_number",
+    //     chassis_number:"chassis_number",
+    //     girder_number:"girder_number",
+    //     carrier_number:"carrier_number",
+    //     trailer_number:"trailer_number",
+    //     production_time:"production_time",
+
+    //     driving_license:"driving_license",
+    //     driving_license_valid:"driving_license_valid",
+    //     insurance_money:"insurance_money",
+    //     road_permit_number:"road_permit_number",
+    //     experience_permit_number:"experience_permit_number",
+
+    //     weight_total:"weight_total",
+    //     weight_Kerb:"weight_Kerb",
+    //     weight_load:"weight_load",
+    //     weight_tow:"weight_tow",
+
+    //     vehicle_length:"vehicle_length",
+    //     vehicle_width:"vehicle_width",
+    //     vehicle_height:"vehicle_height",
+    // };
+    var menu_data = {
+        vehicle_info:"",
+        vehicle_attributes:"",
+        company_id:"",
+        motorcade_id:"",
+        monitoring_company:"",
+        vehicle_status:"",
+        main_driver:"",
+        assistant_driver:"",
+        etc_number:"",
+        oil_wear_100:"",
+
+        vehicle_brand:"",
+        vehicle_type:"",
+        vehicle_model:"",
+        vehicle_horsepower:"",
+        persons_capacity:"",
+        engine_number:"",
+        chassis_number:"",
+        girder_number:"",
+        carrier_number:"",
+        trailer_number:"",
+        production_time:"",
+
+        driving_license:"",
+        driving_license_valid:"",
+        insurance_money:"",
+        road_permit_number:"",
+        experience_permit_number:"",
+
+        weight_total:"",
+        weight_Kerb:"",
+        weight_load:"",
+        weight_tow:"",
+
+        vehicle_length:"",
+        vehicle_width:"",
+        vehicle_height:"",
+    };
+
+    var menu;
+    function ajax_get_vehicle_info_pre(){
+        $.ajax({
+            url:'https://api0.youbanganda.com/get_vehicle_info_pre',
+            type:"post",
+            dataType:"json",
+        }).then(function(data){
+            if(data.code === "0000"){
+                var json_sel = data.data;
+                
+                //车辆属性
+                json_sel.attribute.forEach(function(el){
+                    data_attribute.push(el);
+                });
+
+                //车辆状态
+                json_sel.status.forEach(function(el){
+                    data_status.push(el);
+                });
+
+                //车辆品牌
+                json_sel.brand.forEach(function(el){
+                    data_brand.push(el);
+                });
+
+                //车辆类型
+                json_sel.type.car.forEach(function(el){
+                    data_type_car.push(el);
+                });
+
+                //证件类型
+                json_sel.type.idCode.forEach(function(el){
+                    data_type_idCode.push(el);
+                });
+
+                //维修类型
+                json_sel.type.repair.forEach(function(el){
+                    data_type_repair.push(el);
+                });
+
+                //保养类型
+                json_sel.type.maintain.forEach(function(el){
+                    data_type_maintain.push(el);
+                });
+
+                //驾驶证等级
+                json_sel.gread.forEach(function(el){
+                    data_gread.push(el);
+                });
+
+                ajax_get_enterprise_companys();
+            }
+            
+        });
+    }
+    ajax_get_vehicle_info_pre();
+
+    //获取公司
+    function ajax_get_enterprise_companys(){
+        $.ajax({
+            url:ajax_106 + "/get_enterprise_companys",
+            type:"post",
+            dataType:"json",
+            data:{extra_id:info_login.data.extraid}
+        }).then(function(data){
+            if(data.code === "0000"){
+                if(data.data.length==0){
+                    return;
+                }
+
+                //车辆属性
+                data.data.forEach(function(el){
+                    var obj = {name:el.name,val:el.id};
+                    data_company_id.push(obj);
+                });
+                
+                ajax_get_enterprise_vehicle_team_infos();
+            }
+        });
+    }
+
+    function ajax_get_enterprise_vehicle_team_infos(){
+        $.ajax({
+            url:ajax_106 + "/get_enterprise_vehicle_team_infos",
+            type:"post",
+            dataType:"json",
+            data:{extra_id:info_login.data.extraid}
+        }).then(function(data){
+            if(data.code === "0000"){
+
+                if(data.data.length==0){
+                    fn_begin(menu_data);
+                    toastr.info("无车队信息");
+                    return;
+                }
+                
+                //车辆属性
+                data.data.forEach(function(el){
+                    var obj = {name:el.team_name,val:el.id};
+                    data_motorcade.push(obj);
+                });
+
+                fn_begin(menu_data);
+
+                if(window.sessionStorage.info_mngCarInfo){
+                    info_mngCarInfo = JSON.parse(window.sessionStorage.info_mngCarInfo);
+                    console.log(info_mngCarInfo)
+                    ajax_get_one_vehicle_info(info_mngCarInfo.id);
+                }
+            }else{
+                fn_begin(menu_data);
+            }
+            
+        });
+    }
+    
+    function ajax_get_one_vehicle_info(id){
+        $.ajax({
+            url:ajax_106+"/get_one_vehicle_info",
+            type:"post",
+            dataType:"json",
+            data:{
+                vehicle_info_id:id
+            }
+        }).then(function(data){
+            if(data.code == "0000"){
+                fn_begin(data.data);
+            }
+        });
+    }
+
+    var info_mngCarInfo;
+
+    function fn_begin(data){
+        console.log(data)
+        var json = {
+            elem:$(".mngCar-main"),
+            items:[
+                {
+                    title:"车辆基本信息",
+                    items:[
+                        {title:"车牌号：",required:true,value:data.license_plate,id:"license_plate"},
+                        {title:"车辆属性：",type:"select",required:true,options:data_attribute,selected:data.vehicle_attributes,id:"vehicle_attributes"},
+                        {title:"所属公司：",type:"select",required:true,options:data_company_id,selected:data.company_id,id:"company_id"},
+                        {title:"所属车队：",type:"select",required:true,options:data_motorcade,selected:data.motorcade_id,id:"data_motorcade"},
+                        {title:"监控公司：",value:data.monitoring_company,id:"monitoring_company"},
+                        {title:"车辆状态：",type:"select",required:true,options:data_status,selected:data.vehicle_status,id:"vehicle_status"},
+                        {title:"主司机：",value:data.main_driver,id:"main_driver"},
+                        {title:"副司机：",value:data.assistant_driver,id:"assistant_driver"},
+                        {title:"ETC卡：",value:data.etc_number,id:"etc_number"},
+                        {title:"标准百公里油耗(L)：",value:data.oil_wear_100,id:"oil_wear_100"},
+                    ],
+                },
+                {
+                    title:"基础信息",
+                    items:[
+                        {title:"车辆品牌：",type:"select",required:true,options:data_brand,selected:data.vehicle_brand,id:"vehicle_brand"},
+                        {title:"车辆类型：",type:"select",required:true,options:data_type_car,selected:data.vehicle_type,id:"vehicle_type"},
+                        {title:"车辆厂牌型号：",value:data.vehicle_model,id:"vehicle_model"},
+                        {title:"马力：",value:data.vehicle_horsepower,id:"vehicle_horsepower"},
+                        {title:"核定载人数：",value:data.persons_capacity,id:"persons_capacity"},
+                        {title:"发动机号码：",value:data.engine_number,id:"engine_number"},
+                        {title:"车架号：",value:data.chassis_number,id:"chassis_number"},
+                        {title:"大梁号：",value:data.chassis_number,id:"girder_number"},
+                        {title:"托架号：",value:data.carrier_number,id:"carrier_number"},
+                        {title:"挂车号码：",value:data.trailer_number,id:"trailer_number"},
+                        {title:"出厂日期：",type:"date",required:true,value:data.production_time,id:"production_time"},
+                    ],
+                },
+                {
+                    title:"营运信息",
+                    items:[
+                        {title:"行驶证号：",required:true,value:data.driving_license,id:"driving_license"},
+                        {title:"行驶证有效期：",required:true,value:data.driving_license_valid,type:"date",id:"driving_license_valid"},
+                        {title:"保险金额：",value:data.insurance_money,id:"insurance_money"},
+                        {title:"道路运输证号：",value:data.road_permit_number,id:"road_permit_number"},
+                        {title:"经营许可证号：",value:data.experience_permit_number,id:"experience_permit_number"},
+                    ],
+                },
+                {
+                    title:"质量信息(kg)",
+                    items:[
+                        {title:"总质量：",value:data.weight_total,id:"weight_total"},
+                        {title:"整备质量：",value:data.weight_Kerb,id:"weight_Kerb"},
+                        {title:"核定载重：",value:data.weight_load,id:"weight_load"},
+                        {title:"准牵引总质量：",value:data.weight_tow,id:"weight_tow"},
+                    ],
+                },
+                {
+                    title:"质量信息(kg)",
+                    items:[
+                        {title:"车厢内部长：",value:data.vehicle_length,id:"vehicle_length"},
+                        {title:"车厢内部宽：",value:data.vehicle_width,id:"vehicle_width"},
+                        {title:"车厢内部高：",value:data.vehicle_height,id:"vehicle_height"},
+                    ],
+                }
+            ]
+        };
+        menu = new fn_edit_begin(json);
+    }
+
+    function ajax_update_vehicle_info(set){
+        $.ajax({
+            url:ajax_106+"/update_vehicle_info",
+            type:"post",
+            dataType:"json",
+            data:set,
+        }).then(function(data){
+            if(data.code === "0000"){
+                toastr.success(data.message);
+                ajax_nav("mng-car-info");
+            }
+        });
+    }
+
+    $(function(){
+        //event-save
+        $(document).off("click","#save").on("click","#save",function(){
+            var is = menu.is_required();
+            var sel_arr = menu.sel_arr;
+            if(!is)return;
+            var data_set = {
+                vehicle_info_id:info_mngCarInfo.id,
+                license_plate:$("#license_plate").val(),
+                vehicle_attributes:sel_arr[0].value,
+                company_id:sel_arr[1].value,
+                motorcade_id:sel_arr[2].value,
+                monitoring_company:$("#monitoring_company").val(),
+                vehicle_status:sel_arr[3].value,
+                main_driver:$("#main_driver").val(),
+                assistant_driver:$("#assistant_driver").val(),
+                etc_number:$("#etc_number").val(),
+                oil_wear_100:$("#oil_wear_100").val(),
+
+                vehicle_brand:sel_arr[4].value,
+                vehicle_type:sel_arr[5].value,
+                vehicle_model:$("#vehicle_model").val(),
+                vehicle_horsepower:$("#vehicle_horsepower").val(),
+                persons_capacity:$("#persons_capacity").val(),
+                engine_number:$("#engine_number").val(),
+                chassis_number:$("#chassis_number").val(),
+                girder_number:$("#girder_number").val(),
+                carrier_number:$("#carrier_number").val(),
+                trailer_number:$("#trailer_number").val(),
+                production_time:$("#production_time").val(),
+
+                driving_license:$("#driving_license").val(),
+                driving_license_valid:$("#driving_license_valid").val(),
+                insurance_money:$("#insurance_money").val(),
+                road_permit_number:$("#road_permit_number").val(),
+                experience_permit_number:$("#experience_permit_number").val(),
+
+                weight_total:$("#weight_total").val(),
+                weight_Kerb:$("#weight_Kerb").val(),
+                weight_load:$("#weight_load").val(),
+                weight_tow:$("#weight_tow").val(),
+
+                vehicle_length:$("#vehicle_length").val(),
+                vehicle_width:$("#vehicle_width").val(),
+                vehicle_height:$("#vehicle_height").val(),
+            };
+            ajax_update_vehicle_info(data_set)
+            console.log(is);
+        });
+    });
+    
+</script>
+
+
+

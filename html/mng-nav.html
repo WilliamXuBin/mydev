@@ -1,0 +1,51 @@
+<style>
+    .mngNav{width:1120px;margin:200px auto;}
+    .mngNav ul{}
+    .mngNav ul li{width:200px;height:200px;float:left;background-repeat:no-repeat;margin-right:30px;margin-bottom:30px;cursor:pointer;}
+    .mngNav ul li:nth-child(5n){margin-right:0;}
+    .mngNav-icon1{background-image:url('img/mng/nav/1.png');}
+    .mngNav-icon2{background-image:url('img/mng/nav/2.png');}
+    .mngNav-icon3{background-image:url('img/mng/nav/3.png');}
+    .mngNav-icon4{background-image:url('img/mng/nav/4.png');}
+    .mngNav-icon5{background-image:url('img/mng/nav/5.png');}
+    .mngNav-icon6{background-image:url('img/mng/nav/6.png');}
+    .mngNav-icon7{background-image:url('img/mng/nav/7.png');}
+    .mngNav-icon8{background-image:url('img/mng/nav/8.png');}
+    .mngNav-icon9{background-image:url('img/mng/nav/9.png');}
+    .mngNav-icon10{background-image:url('img/mng/nav/10.png');}
+</style>
+    
+<div class="mngNav">
+    <ul class="zoom">
+        <li class="mngNav-icon1" d-href="mng-car-info"></li>
+        <li class="mngNav-icon2" d-href="mng-car-driver"></li>
+        <li class="mngNav-icon3" d-href="mng-car-fleet"></li>
+        <li class="mngNav-icon4" d-href="mng-car-certificates"></li>
+        <!-- <li class="mngNav-icon5" d-href=""></li> -->
+        <li class="mngNav-icon6" d-href="mng-car-repair"></li>
+        <li class="mngNav-icon7" d-href="mng-car-maintain"></li>
+        <li class="mngNav-icon8" d-href="mng-car-fuel"></li>
+        <!-- <li class="mngNav-icon9" d-href=""></li> -->
+        <li class="mngNav-icon10" d-href="mng-oil-wear"></li>
+    </ul>
+</div>
+
+
+<script type="text/javascript">
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理"},
+    ]);
+
+    $(function(){
+        $(".mngNav li").click(function(){
+            var href = $(this).attr("d-href");
+            if(!href)return;
+            ajax_nav(href);
+        });
+    });
+</script>
+
+
+

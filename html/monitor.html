@@ -1,0 +1,315 @@
+<!--总体安全监控-->
+<style>
+	.monitor-table{margin:20px 0 0 0;}
+	.monitor-table-space{display:inline-block;width:100px;}
+
+	.monitor-item-content{width: 100%;margin: 50px 0 50px}
+	.monitor-box{width:calc(25% - 9px);padding:10px 40px 10px 40px;background:rgba(60, 190, 224,0.4);float:left;margin-right:12px;}
+	.monitor-box:last-child{margin-right:0px;}
+	.monitor-box-up{width: 100%;float:left;border-bottom: 2px solid #2381a1;padding-bottom: 5px}
+	.monitor-box-down{width: 100%;float:left;}
+	.monitor-box-item-right{float:right}
+	.monitor-box-txt-up{color:#fff;float:left;line-height:38px;margin:0 2px 0 2px;padding-top: 15px}
+	.monitor-box-txt-down{color:#fff;float:left;line-height:38px;margin:0 2px 0 2px;}
+	.monitor-box-txt2{color:#ff0;float:left;line-height:53px;font-size: 40px}
+</style>
+
+<div class="mainBox">
+	<div class="monitor-item-content zoom">
+		<div class="monitor-box zoom" id="box1">
+			<div class="monitor-box-up">
+				<div class="monitor-box-txt-up" style="float: left">今日高危车辆</div>
+				<div class="monitor-box-item-right">
+					<div class="monitor-box-txt2" id="num11">--</div>
+					<div class="monitor-box-txt-up">辆</div>
+				</div>
+			</div>
+			<div class="monitor-box-down">
+				<div class="monitor-box-txt-down" style="float: left">昨日</div>
+				<div class="monitor-box-item-right">
+					<div class="monitor-box-txt-down" id="num12">--</div>
+					<div class="monitor-box-txt-down">辆</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="monitor-box zoom" id="box2">
+			<div class="monitor-box-up">
+				<div class="monitor-box-txt-up" style="float: left">当前行驶车辆</div>
+				<div class="monitor-box-item-right">
+					<div class="monitor-box-txt2" id="num21">--</div>
+					<div class="monitor-box-txt-up">辆</div>
+				</div>
+			</div>
+			<div class="monitor-box-down">
+				<div class="monitor-box-txt-down" style="float: left">全部车辆</div>
+				<div class="monitor-box-item-right">
+					<div class="monitor-box-txt-down" id="num22">--</div>
+					<div class="monitor-box-txt-down">辆</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="monitor-box zoom" id="box3">
+			<div class="monitor-box-up">
+				<div class="monitor-box-txt-up" style="float: left">今日途中危险场景</div>
+				<div class="monitor-box-item-right">
+					<div class="monitor-box-txt2" id="num31">--</div>
+					<div class="monitor-box-txt-up">个</div>
+				</div>
+			</div>
+			<div class="monitor-box-down">
+				<div class="monitor-box-txt-down" style="float: left">昨日</div>
+				<div class="monitor-box-item-right">
+					<div class="monitor-box-txt-down" id="num32">--</div>
+					<div class="monitor-box-txt-down">个</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="monitor-box zoom" id="box4">
+			<div class="monitor-box-up">
+				<div class="monitor-box-txt-up" style="float: left">今日不安全事件</div>
+				<div class="monitor-box-item-right">
+					<div class="monitor-box-txt2" id="num41">--</div>
+					<div class="monitor-box-txt-up">次</div>
+				</div>
+			</div>
+			<div class="monitor-box-down">
+				<div class="monitor-box-txt-down" style="float: left">昨日</div>
+				<div class="monitor-box-item-right">
+					<div class="monitor-box-txt-down" id="num42">--</div>
+					<div class="monitor-box-txt-down">次</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择时间</div>
+			<div class="singleMenu-item-content" id="days" style="width:130px;"></div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_start">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_end">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">排序</div>
+			<div class="singleMenu-item-content" id="rank"></div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search_monitor">确定</button></div>
+	</div>
+
+	<div class="monitor-table">
+		<table class="ttable" id="ttable"></table>
+		<div id="pageDemo"></div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	var tt = {
+		elem:$("#ttable"),
+		titles:['序号','车牌号','开始时间','结束时间','驾驶得分','环境得分','总体安全得分','与同行相比'],
+		items:"请选择条件查询",
+	};
+	ttable_monitor = new fn_ttable(tt);
+
+	var pageSign = 1;//分页需要的参数
+	var curr = 1;//分页当前页
+	var ttable;
+	var days="";
+	var rank="";
+	var vehicle_id="";
+
+	var data_set = {
+		role_id:info_login.data.roleid,
+		extra_id:info_login.data.extraid,
+		days:"",
+		start:"",
+		end:"",
+		vehicle_id:""
+	};
+
+	var init_set = {
+		role_id:info_login.data.roleid,
+		extra_id:info_login.data.extraid,
+	};
+	//ajax-获得全部车辆
+	function get_vehicles(set){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				var options= [{name:"请选择",val:""}];
+				data.data.forEach(function(el,index){
+					options.push({name:el.name,val:el.id});
+				});
+				vehicle_id = new fn_tselect({elem:$("#vehicle"),options:options});
+				$("#search_monitor").click();
+			}
+		});
+	}
+
+	//各车辆数量
+	function get_overall_today_yesterday_score(set){
+		$.ajax({
+			url:ajax_106+'/get_overall_today_yesterday_score',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data=data.data
+				$("#num11").html(data['dangerous_vehicle_num']['today']);
+				$("#num12").html(data['dangerous_vehicle_num']['yesterday']);
+				$("#num21").html(data['running_vehicle_num']['running']);
+				$("#num22").html(data['running_vehicle_num']['total']);
+				$("#num31").html(data['dangerous_scene_num']['today']);
+				$("#num32").html(data['dangerous_scene_num']['yesterday']);
+				$("#num41").html(data['unsafe_incident_num']['today']);
+				$("#num42").html(data['unsafe_incident_num']['yesterday']);
+			}
+		});
+	}
+	get_overall_today_yesterday_score(init_set)
+
+	function add_time_list(){
+		var options= [{name:"请选择",val:""},{name:"今天",val:"1"},{name:"昨天",val:"2"},{name:"最近3天",val:"3"},{name:"最近7天",val:"7"},{name:"最近30天",val:"30"}];
+		days = new fn_tselect({elem:$("#days"),options:options,selected_option:1});
+		$("#item_start").hide();
+		$("#item_end").hide();
+
+		days.on("change",function(){
+			if(!days.value){
+				$("#item_start").show();
+				$("#item_end").show();
+			}else{
+				$("#item_start").hide();
+				$("#item_end").hide();
+			}
+		});
+	}
+
+	function add_order_list(){
+		var options= [{name:"请选择",val:""},{name:"从低到高",val:"low"},{name:"从高到低",val:"high"}];
+		rank = new fn_tselect({elem:$("#rank"),options:options});
+	}
+
+	//ajax-获取车辆得分
+	function get_vehicle_score(set){
+		fn_table_loading();//列表加载中
+		$.ajax({
+			url:ajax_106+'/get_vehicle_score',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				setTimeout(fn_list(data,"monitor"),1000);
+			}else{
+				ttable_monitor.init({items:[]});
+			}
+		});
+	}
+
+	//fn-获取车辆得分
+	function fn_list(items,sign){
+		if(!items || items.length==0){
+			ttable_monitor.init({items:[]});
+			return;
+		}
+		if(sign != "monitor")return;
+
+		var items = fn_format_arr(items);
+
+		if(rank.value)items.sort(compare('avg_score1',rank.value));		
+
+		var arr = [];
+		items.forEach(function(el,index){
+			index++;
+			var obj = {tds:[
+				index,
+				el.licence,
+				el.start,
+				el.end,
+				el.avg_score2,
+				el.avg_score3,
+				el.avg_score1,
+				el.compare
+			]};
+			arr.push(obj);
+		});
+		ttable_monitor.init({items:arr});
+	}
+	$(function(){
+		add_time_list();//时间
+		add_order_list();//排序
+		get_vehicles(init_set);//ajax-获得全部车辆
+
+		//点击搜索
+		$(document).off("click","#search_monitor").on("click","#search_monitor",function(){
+			// if(!vehicle_id.value){
+			// 	toastr.error('请选择车辆');//提示框
+			// 	return;
+			// }
+			if(!$("#menu_start").val() && !days.value){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+			if(!$("#menu_end").val() && !days.value){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+			if($("#menu_start").val() && $("#menu_end").val() && $("#menu_start").val() > $("#menu_end").val()){
+				toastr.error('开始时间不能大于结束时间！');//提示框
+				return;
+			}
+
+			pageSign = 1;//分页需要的参数
+			curr = 1;//分页当前页
+
+			ttable_monitor.init({items:'加载中'});
+			data_set.vehicle_id = vehicle_id.value;
+			data_set.days = days.value;
+			data_set.start = $("#menu_start").val();
+			data_set.end = $("#menu_end").val();
+			get_vehicle_score(data_set);//ajax-获取车辆得分
+		});
+
+		$(document).off("click","#box1").on("click","#box1",function(){
+			ajax_nav('dangerous-car');
+		});
+
+
+		$(document).off("click","#box2").on("click","#box2",function(){
+			ajax_nav('running-car');
+		});
+
+
+		$(document).off("click","#box3").on("click","#box3",function(){
+			ajax_nav('dangerous-scene');
+		});
+
+
+		$(document).off("click","#box4").on("click","#box4",function(){
+			ajax_nav('unsafe-incident');
+		});
+	});
+</script>

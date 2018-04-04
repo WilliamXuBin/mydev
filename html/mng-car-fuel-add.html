@@ -1,0 +1,153 @@
+<style>
+    
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-main"></div>
+    <div class="mngCar-add-btn"><button class="moperation-btn" id="save">确定</button></div>
+</div>
+
+<script type="text/javascript">
+    var menu,
+        sel_arr,
+        sel_license_plate=[{name:"请选择",val:""}],
+        data_type=[{name:"请选择",val:""}];
+
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"加油管理",href:"mng-car-fuel"},
+        {name:"添加加油管理"},
+    ]);
+    
+    function fn_begin(data){
+        var json = {
+            elem:$(".mngCar-main"),
+            items:[
+                {
+                    title:"加油管理",
+                    items:[
+                        {title:"车牌号码：",type:"select",required:true,options:sel_license_plate,selected:data.license_plate,id:"license_plate"},
+                        {title:"加油时间：",value:data.refuel_time,type:"date",required:true,id:"refuel_time"},
+                        {title:"加油站名称：",value:data.gas_station_name,id:"gas_station_name"},
+                        {title:"加油位置：",value:data.refueling_position,id:"refueling_position"},
+                        {title:"加油方式：",type:"select",options:data_type,selected:data.refueling_method,id:"refueling_method"},
+                        {title:"加油量：",value:data.fuel_quantity,id:"fuel_quantity"},
+                        {title:"加油单价：",value:data.refueling_unit,id:"refueling_unit"},
+                        {title:"总金额：",value:data.total_amount,id:"total_amount"},
+                        {title:"加油前油量：",value:data.oil_quantity_before_refueling,id:"oil_quantity_before_refueling"},
+                        {title:"备注信息：",value:data.information,id:"information",colspan:3},
+                    ],
+                },
+            ]
+        };
+        menu = new fn_edit_begin(json);
+    }
+    var postData = {
+        license_plate:"",
+        refuel_time:"",
+        gas_station_name:"",
+        refueling_position:"",
+        refueling_method:"",
+        fuel_quantity:"",
+        refueling_unit:"",
+        total_amount:"",
+        oil_quantity_before_refueling:"",
+        information:"",
+    };
+    // var postData = {
+    //     license_plate:"license_plate",
+    //     refuel_time:"",
+    //     gas_station_name:"gas_station_name",
+    //     refueling_position:"refueling_position",
+    //     refueling_method:"",
+    //     fuel_quantity:"fuel_quantity",
+    //     refueling_unit:"refueling_unit",
+    //     total_amount:"total_amount",
+    //     oil_quantity_before_refueling:"oil_quantity_before_refueling",
+    //     information:"information",
+    // };
+    //fn_begin(post_data);
+
+    function ajax_get_vehicle_info_pre(){
+        $.ajax({
+            url:'https://api0.youbanganda.com/get_vehicle_info_pre',
+            type:"post",
+            dataType:"json",
+        }).then(function(data){
+            if(data.code === "0000"){
+                var json_sel = data.data;
+
+                //保养类型
+                json_sel.refuel_type.forEach(function(el){
+                    data_type.push(el);
+                });
+
+                ajax_get_enterprise_vehicle_license_plates();
+            }
+            
+        });
+    }
+    ajax_get_vehicle_info_pre();
+
+    function ajax_get_enterprise_vehicle_license_plates(){
+        $.ajax({
+            url:ajax_106+"/get_enterprise_vehicle_license_plates",
+            type:"post",
+            dataType:"json",
+            data:{
+                extra_id:info_login.data.extraid
+            }
+        }).then(function(data){
+            if(data.code === "0000"){
+                sel_license_plate = [{name:"请选择",val:""}];
+                data.data.forEach(function(el,index){
+                    sel_license_plate.push({val:el.id,name:el.license_plate});
+                });
+
+                fn_begin(postData);
+            }
+        });
+    }
+
+    function ajax_insert_refuel_record(set){
+        $.ajax({
+            url:ajax_106+"/insert_refuel_record",
+            type:"post",
+            dataType:"json",
+            data:set,
+        }).then(function(data){
+            if(data.code === "0000"){
+                toastr.success(data.message);
+                ajax_nav("mng-car-fuel");
+            }
+        });
+    }
+
+    $(function(){
+        //event-save
+        $(document).off("click","#save").on("click","#save",function(){
+            var is = menu.is_required();
+            var sel_arr = menu.sel_arr;
+            if(!is)return;
+            var data_set = {
+                extra_id:info_login.data.extraid,
+                vehicle_info_id:sel_arr[0].value,
+                refuel_time:$("#refuel_time").val(),
+                gas_station_name:$("#gas_station_name").val(),
+                refueling_position:$("#refueling_position").val(),
+                refueling_method:sel_arr[1].value,
+                fuel_quantity:$("#fuel_quantity").val(),
+                refueling_unit:$("#refueling_unit").val(),
+                total_amount:$("#total_amount").val(),
+                oil_quantity_before_refueling:$("#oil_quantity_before_refueling").val(),
+                information:$("#information").val(),
+            };
+            ajax_insert_refuel_record(data_set);
+        });
+    });
+</script>
+
+
+

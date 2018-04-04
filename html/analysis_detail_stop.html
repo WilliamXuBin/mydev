@@ -1,0 +1,325 @@
+<style>
+	
+</style>
+<div id="container" tabindex="0"></div>
+
+<script type="text/javascript">
+	fn_size_window();//窗体大小
+	var colors = ["#008df2","#12e6d4","#fdca00","#ff482f"];
+
+	$(document).off("click",".ibtn-close");
+
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"分析中心"},
+		{name:"停车统计",href:"vehiclestop-analysis"},
+		{name:"停车统计详情"}
+	]);
+
+	//创建地图
+	var map = new AMap.Map('container', {
+	    resizeEnable: true,
+	    zoom:11,
+	    mapStyle:map_style
+	});
+
+	//ajax-获得特定用户的电子围栏
+    function ajax_get_user_electricfence(){
+    	$.ajax({
+    		url:ajax_106+'/get_user_electricfence',
+    		type:'post',
+    		dataType:'json',
+    		data:{
+    			user_id:info_login.data.id
+    		},
+    		async:false,
+    	}).then(function(data){
+    		if(data.code === "0000"){
+    			if(data.data && data.data.length>0){
+    				fn_set_fence(data.data);
+    			}
+    		}
+    	});
+    }
+    ajax_get_user_electricfence();
+
+    //ajax-获取车辆停车地图信息
+    function ajax_get_vehicle_stop_map_data(set){
+    	$.ajax({
+    		url:ajax_106+'/get_vehicle_stop_map_data',
+    		type:'post',
+    		dataType:'json',
+    		data:set,
+    		async:false,
+    	}).then(function(data){
+    		if(data.code === "0000"){
+    			if(data.data){
+    				fn_vehicle_stop(data.data);
+    			}
+    		}
+    	});
+    }
+
+    function fn_vehicle_stop(data){
+		var lngLat = [data.gps_lon,data.gps_lat];
+		//fn-绘制标注
+		var _marker = map_marker({
+			name:data.poi_name,
+			location:lngLat,
+			title:data.poi_name
+		});
+
+		_marker.off("click",event_click).on("click",event_click);
+		function event_click(){
+			fn_infoWindow({
+				order:data.order,
+				license:data.license,//标题
+				address:"",//地址
+				type:data.type,
+				start:data.start,
+				end:data.end,
+				poi_name:data.poi_name,			
+				lngLat:lngLat
+			});
+		}
+
+		map.setCenter(lngLat);
+    }
+
+    if(window.sessionStorage.info_detail_stop){
+    	var info_detail_stop = JSON.parse(window.sessionStorage.info_detail_stop);
+    	var set = {
+    		vehicle_id:info_detail_stop.vehicle_id,
+    		start:info_detail_stop.start,
+    		end:info_detail_stop.end,
+    	};
+    	ajax_get_vehicle_stop_map_data(set);//ajax-获取车辆停车地图信息
+    }
+
+    //fn-绘制图形
+	//config:{
+	//		type:"",//类型round:圆,triangle:多边形
+	//		location:[],//圆的中心点
+	//		path:[],//多边形的坐标组
+	//		radius:num,//圆的半径
+	//		extData:{},//多边形参数
+	//}
+	function fn_draw(config){
+		var fillColor = "#ee8754";
+		if(config.fillColor && config.fillColor==="预览"){
+			fillColor = "#ee8754";
+		}
+
+		function round(){
+			//配置电子围栏
+			var circle = new AMap.Circle({
+			    center: config.location,
+			    radius: config.radius,
+			    fillOpacity:0.2,
+			    fillColor:fillColor,
+			    strokeWeight:1,
+			    strokeColor:fillColor,
+			    bubble:true,
+			});
+			circle.setMap(map);//生成电子围栏
+			return circle;
+		}
+
+		function triangle(){
+			//配置区域围栏
+			var polygon = new AMap.Polygon({
+			    path: config.path,//format-坐标解析格式
+			    fillOpacity:0.1,
+			    fillColor:fillColor,
+			    strokeOpacity: 1,
+            	strokeWeight: 3,
+            	strokeColor:fillColor,
+			    map:map,
+			    zIndex:12,
+			    extData:config.extData,
+			});
+			return polygon;
+		}
+
+		switch(config.type){
+			case "round":
+				return round();
+				break;
+			case "triangle":
+				return triangle();
+				break;
+		}
+	}
+
+    //fn-列出已有电子围栏
+    function fn_set_fence(items){
+    	//已添加的标注
+	    marker_begin = [];
+    	items.forEach(function(el,index){
+    		if(el.type == 1){
+	    		var location = [el.gps_lon,el.gps_lat];
+
+	    		//fn-绘制图形
+				fn_draw({
+					type:"round",
+					location:location,
+					radius:el.radius,
+				});
+
+		    	//fn-绘制标注
+				var _marker = map_marker({
+					name:el.name,
+					location:location,
+					title:el.location_name,
+					bg:"center"
+				});
+			}
+    	});
+    }
+
+    //fn-生成信息气泡
+	//config:{
+	//		title:"",//标题
+	//		address:"",//地址
+	//		location:"",//经纬度
+	//		isEdit:"",//是否需要编辑-电子围栏ID
+	//}
+	function fn_infoWindow(config){
+		var obj = {
+			width:75,
+			title:"订单号："+config.order,
+			items:[
+				{title:"车牌号码：",content:config.license},
+				{title:"停车事件：",content:config.type},
+				{title:"开始时间：",content:config.start},
+				{title:"结束时间：",content:config.end},
+				{title:"停车位置：",content:config.poi_name},
+			],
+		};
+		var infoWindow = new AMap.InfoWindow({
+		    isCustom: true,  //使用自定义窗体
+		    content: ret_infoWindow(obj),
+		    offset: new AMap.Pixel(5,-70)//定位
+		});
+		infoWindow.open(map, config.lngLat);//加载信息载体窗口
+	}
+
+    //返回信息提示层样式
+	function call_infoBlockHtml(config){
+		if(!config){
+    		console.error("请传入对象参数");
+    		return false;
+    	}
+    	var location = config_location.center;
+
+    	var name = "",
+    		radius = "";
+    	if(config.isEdit && config.id && window.sessionStorage.fenceInfo){
+    		var fenceInfo = JSON.parse(window.sessionStorage.fenceInfo);
+    		name=fenceInfo.name;
+    		radius = fenceInfo.radius;
+    	}
+
+		var html = '<div class="infoBlock">'+config.title+'</div>';
+
+		var html_default = '<div class="infoBlock"><div class="infoBlock-default"><div class="infoBlock-default-title">'+config.title+'</div><div class="infoBlock-default-txt">'+config.address+'</div><div class="infoBlock-default-btn zoom" d-id="'+config.id+'"><button class="cbtn-cancel ibtn-close">取消</button><button class="cbtn" id="fence_remove">删除电子围栏</button></div></div></div>';
+
+		var html_edit = '<div class="infoBlock"><div class="infoBlock-edit"><div class="infoBlock-edit-title zoom"><span class="infoBlock-edit-t1">'+config.title+'</span><span class="infoBlock-edit-t2">'+config.address+'</span><div class="infoBlock-edit-close"></div></div><div class="infoBlock-edit-item zoom"><div class="infoBlock-edit-tle">电子围栏名称</div><div class="infoBlock-edit-cnt"><input type="text" placeholder="请输入电子围栏名称" class="infoBlock-edit-text" id="fence_name" value="'+name+'" maxlength="10" /></div></div><div class="infoBlock-edit-item zoom"><div class="infoBlock-edit-tle">电子围栏半径</div><div class="infoBlock-edit-cnt"><div class="infoBlock-edit-defaultRadio zoom"><span d-radius="2000">2km</span><span d-radius="10000">10km</span><span d-radius="100000">100km</span><span d-radius="200000">200km</span><span d-type="custom" class="zoom" style="padding:0 8px;"><div class="edit-custom">自定义</div><div class="edit-text"><input type="text" id="fence_radius" maxlength="5" placeholder="请输入" />&nbsp;m</div></span></div></div></div><div class="infoBlock-edit-button"><button class="cbtn" id="fence_save">确定</button><button class="cbtn-cancel" id="fence_cancel">取消</button></div></div></div>';
+
+		var round = fn_draw({
+			type:"round",
+			location:location,
+			radius:0,
+			fillColor:"预览",
+		});
+
+		if(config.type === "default"){
+			html = html_default;
+		}else if(config.type === "edit"){
+			html = html_edit;
+
+			//点击电子围栏半径
+			$(document).off("click",".infoBlock-edit-defaultRadio span").on("click",".infoBlock-edit-defaultRadio span",function(){
+				$(".infoBlock-edit-defaultRadio").find("span").removeClass("active");
+				$(this).addClass("active");
+
+				$("#fence_radius").val("");
+
+				radius = $(this).attr("d-radius");
+				round.setRadius(radius);
+
+				if($(this).attr("d-type") == "custom"){
+					$(this).find(".edit-text").show();
+				}
+			});
+
+			//修改电子围栏半径
+			$(document).off("keyup","#fence_radius").on("keyup","#fence_radius",function(){
+				radius = $(this).val();
+				if(isNaN(radius)){
+					radius = "";
+					toastr.error("半径输入不正确");
+					return;
+				}
+				round.setRadius(radius);
+			});
+
+			//点击取消
+			$(document).off("click","#fence_cancel,.infoBlock-edit-close").on("click","#fence_cancel,.infoBlock-edit-close",function(){
+				round.setRadius(0);
+				map.clearInfoWindow();
+			});
+
+			//点击保存
+			$(document).off("click","#fence_save").on("click","#fence_save",function(){
+				var name = $("#fence_name").val();
+				if(!name){
+					toastr.error('请输入电子围栏名称');//提示框
+					return;
+				}else if(!radius){
+					toastr.error('请选择或输入电子围栏半径');//提示框
+					return;
+				}
+
+				if(isNaN(radius)){
+					toastr.error("半径输入不正确");
+					return;
+				}
+
+				var extra = {
+					zoom:map.getZoom(),//缩放视图比例
+					center:{lng:location[0],lat:location[1]},//中心点
+				};
+
+				var postData;
+				if(config.isEdit && config.id){
+					postData = {
+						id:config.id,
+						name:name,
+						radius:radius,
+						extra:JSON.stringify(extra),//其他参数
+					};
+					ajax_update_user_electricfence(postData);//ajax-更新电子围栏
+					return;
+				}
+
+				postData = {
+					name:name,//电子围栏名称
+					user_id:info_login.data.id,//用户ID
+					username:info_login.data.username,//用户名
+					location_name:config.title,//坐标名称
+					poi_name:config.address,//坐标地址
+					gps_lon:config.position.lng,//经度
+					gps_lat:config.position.lat,//纬度
+					type:1,//图形（1：圆，2：多边形）
+					radius:radius,//电子围栏半径
+					extra:JSON.stringify(extra),//其他参数
+				};
+
+				ajax_add_user_electric_fence(postData);//ajax-添加电子围栏方案
+			});
+		}
+		
+		return html;
+	}
+</script>

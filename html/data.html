@@ -1,0 +1,671 @@
+<style>
+.z-label{width:100px;float:left;text-align:left;}
+.z-content{width:calc(100% - 110px);float:right;}
+.boxAlert-btn{position:absolute;top:0;right:0px;height:32px;z-index:1;text-align:right;}
+</style>
+<div id="boxAlert" style="position:relative;min-height:56px;">
+	<div class="boxAlert-btn">
+		<button class="btn btn-orange bg-lg" id="btn_open">选择特定车辆</button>
+	</div>
+</div>
+
+<div class="panel panel-default">
+	<div class="panel-heading" id="total"></div>
+	<div class="panel-body">
+		<div class="row">
+			<div class="col-sm-12">
+				<div id="range-chart"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="panel panel-default">
+	<div class="panel-heading" id="drive_title">--</div>
+	<div class="panel-body">
+		
+		<div class="row">
+			<div class="col-sm-3">
+				<p class="text-medium">&nbsp;<br/><br/></p>
+				<div class="super-large text-secondary" id="drive_value" data-count="this" data-from="0" data-to="0" data-duration="1.5">0</div>
+			</div>
+			<div class="col-sm-3">
+				<div id="drive_per" style="height: 150px;"></div>
+			</div>
+			<div class="col-sm-6">
+				<div id="drive_chart" style="height: 150px;"></div>
+			</div>
+		</div>
+		
+	</div>
+</div>
+
+<div class="panel panel-default">
+	<div class="panel-heading" id="es_title">--</div>
+	<div class="panel-body">
+		
+		<div class="row">
+			<div class="col-sm-3">
+				<p class="text-medium">&nbsp;<br/><br/></p>
+				<div class="super-large text-purple" id="es_value" data-count="this" data-from="0" data-to="0" data-duration="2">0</div>
+			</div>
+			<div class="col-sm-3">
+				<div id="es_per" style="height: 150px;"></div>
+			</div>
+			<div class="col-sm-6">
+				<div id="es_chart" style="height: 150px;"></div>
+			</div>
+		</div>
+		
+	</div>
+</div>
+
+<div class="panel panel-default">
+	<div class="panel-heading" id="unsafe_title"></div>
+	<div class="panel-body">
+		
+		<div class="row">
+			<div class="col-sm-3">
+				<p class="text-medium">&nbsp;<br/><br/></p>
+				<div class="super-large text-info" id="unsafe_value" data-count="this" data-from="0" data-to="0" data-duration="3">0</div>
+			</div>
+			<div class="col-sm-3">
+				<div id="unsafe_per" style="height: 150px;"></div>
+			</div>
+			<div class="col-sm-6">
+				<div id="unsafe_chart" style="height: 150px;"></div>
+			</div>
+		</div>
+		
+	</div>
+</div>
+
+<script type="text/javascript">
+clearTimer();//清除定时器
+
+//fn-showList  第一层列表
+function fn_list(items,sign){
+	if(!items || items.length === 0)return false;	
+
+	var dom = "menuChild";
+	if(sign)dom="";
+
+	var arr = [];
+	items.forEach(function(el,index){
+		arr.push({id:el.id,name:el.name,dom:dom});
+	});
+	fun_menu(arr);//右侧菜单管理
+}
+
+//fn_getCars  第二层列表
+function fn_getCars(items,_this){
+	var html = '';
+	if(!items || items.length === 0){
+		html = '<li><a><span class="title">没有车辆</span></a></li>';
+		_this.next("ul").html(html);
+		return false;
+	}
+	
+	items.forEach(function(el,index){
+		html += '<li class="car" d-id='+el.id+'><a><span class="title">'+el.name+'</span></a></li>';
+	});
+	_this.next("ul").html(html);
+}
+
+var gaugesPalette = ['#8dc63f', '#40bbea', '#ffba00', '#cc3f44'];
+
+//ajax-获取一小时内得分
+function ajax_get_1hour_3scores(data){
+	$.ajax({
+		url:ajax_106+'/get_1hour_3scores',
+		type:'post',
+		dataType:"json",
+		data:{
+			role_id:data.role_id,
+			extra_id:data.extra_id,
+		},
+	}).then(function(data){
+		if(data.code === "0000"){
+			//format
+			function fn_formatArr(items){
+				items.forEach(function(el,index){
+					el.time = new Date(el.time);
+				});
+				return items;
+			}
+
+			var drive = data.data.drive;
+			var es = data.data.es;
+			var safe = data.data.safe;
+
+			fn_formatArr(drive.charts);//format
+			fn_formatArr(es.charts);//format
+			fn_formatArr(safe.charts);//format
+			
+			fn_drive(drive);//图二-驾驶安全得分
+			fn_es(es);//图在-环境安全得分
+			fn_unsafe(safe);//图四-安全事件
+
+			fn_safe(data.data);//图一
+		}
+	});
+}
+
+var scoresData = {
+	role_id:info_login.data.roleid,
+	extra_id:info_login.data.extraid,
+};
+ajax_get_1hour_3scores(scoresData)//ajax-获取一小时内得分
+
+//ajax-重新获取接口
+function ajax_get_vehicle_history_scores_p2(data){
+	$.ajax({
+		url:ajax_106+'/get_vehicle_history_scores_p2',
+		type:'post',
+		dataType:"json",
+		data:{
+			vehicle_id:data.vehicle_id,
+			start:data.start,
+			end:data.end,
+		},
+	}).then(function(data){
+		if(data.code === "0000"){
+			//format
+			function fn_formatArr(items){
+				items.forEach(function(el,index){
+					el.time = new Date(el.time);
+				});
+				return items;
+			}
+
+			var drive = data.data.drive;
+			var es = data.data.es;
+			var safe = data.data.safe;
+
+			fn_formatArr(drive.charts);//format
+			fn_formatArr(es.charts);//format
+			fn_formatArr(safe.charts);//format
+			
+			fn_drive(drive);//图二-驾驶安全得分
+			fn_es(es);//图在-环境安全得分
+			fn_unsafe(safe);//图四-安全事件
+
+			fn_safe(data.data);//图一
+		}else{
+
+		}
+	});
+}
+
+//图二-驾驶安全得分
+function fn_drive(data){
+	$("#drive_title").html(data.title);
+	$("#drive_value").attr("data-to",data.value.toFixed(2));
+	$("#drive_value").html(data.value.toFixed(2));
+
+	// 图表二-左
+	$('#drive_per').dxCircularGauge({
+		scale: {
+			startValue: data.startValue,
+			endValue: data.endValue,
+			majorTick: {
+				tickInterval: data.tickInterval
+			}
+		},
+		rangeContainer: {
+			palette: 'pastel',
+			width: 3,
+			ranges: [
+				{
+					startValue: 0,
+					endValue: data.endValue/4,
+					color: gaugesPalette[0]
+				},
+				{
+					startValue: data.endValue/4,
+					endValue: data.endValue/2,
+					color: gaugesPalette[1]
+				},
+				{
+					startValue: data.endValue/2,
+					endValue: data.endValue/4*3,
+					color: gaugesPalette[2]
+				},
+				{
+					startValue: data.endValue/4*3,
+					endValue: data.endValue,
+					color: gaugesPalette[3]
+				},
+			],
+		},
+		value: data.value,
+		valueIndicator: {
+			offset: 10,
+			color: '#2c2e2f',
+			spindleSize: 12
+		}
+	});
+
+	// 图表二-右
+	$("#drive_chart").dxChart({
+		dataSource: data.charts,
+		commonPaneSettings: {
+			border: {
+				visible: true,
+				color: '#f5f5f5'
+			}
+		},
+		commonSeriesSettings: {
+			type: "area",
+			argumentField: "time",
+			border: {
+				color: '#68b828',
+				width: 1,
+				visible: true
+			}
+		},
+		series: [
+			{ valueField: "used", name: "Reqs per Second", color: '#68b828', opacity: .5 },
+		],
+		commonAxisSettings: {
+			label: {
+				visible: true
+			},
+			grid: {
+				visible: true,
+				color: '#f5f5f5'
+			}
+		},
+		argumentAxis: {
+			valueMarginsEnabled: false,
+		},
+		legend: {
+			visible: false
+		}
+	});
+}
+
+//图三-环境安全得分
+function fn_es(data){
+	$("#es_title").html(data.title);
+	$("#es_value").attr("data-to",data.value.toFixed(2));
+	$("#es_value").html(data.value.toFixed(2));
+
+	// 图表二-左
+	$('#es_per').dxCircularGauge({
+		scale: {
+			startValue: data.startValue,
+			endValue: data.endValue,
+			majorTick: {
+				tickInterval: data.tickInterval
+			}
+		},
+		rangeContainer: {
+			palette: 'pastel',
+			width: 3,
+			ranges: [
+				{
+					startValue: 0,
+					endValue: data.endValue/4,
+					color: gaugesPalette[0]
+				},
+				{
+					startValue: data.endValue/4,
+					endValue: data.endValue/2,
+					color: gaugesPalette[1]
+				},
+				{
+					startValue: data.endValue/2,
+					endValue: data.endValue/4*3,
+					color: gaugesPalette[2]
+				},
+				{
+					startValue: data.endValue/4*3,
+					endValue: data.endValue,
+					color: gaugesPalette[3]
+				},
+			],
+		},
+		value: data.value,
+		valueIndicator: {
+			offset: 10,
+			color: '#2c2e2f',
+			spindleSize: 12
+		}
+	});
+
+	// 图表二-右
+	$("#es_chart").dxChart({
+		dataSource: data.charts,
+		commonPaneSettings: {
+			border: {
+				visible: true,
+				color: '#f5f5f5'
+			}
+		},
+		commonSeriesSettings: {
+			type: "area",
+			argumentField: "time",
+			border: {
+				color: '#7c38bc',
+				width: 1,
+				visible: true
+			}
+		},
+		series: [
+			{ valueField: "used", name: "Reqs per Second", color: '#7c38bc', opacity: .5 },
+		],
+		commonAxisSettings: {
+			label: {
+				visible: true
+			},
+			grid: {
+				visible: true,
+				color: '#f5f5f5'
+			}
+		},
+		argumentAxis: {
+			valueMarginsEnabled: false,
+		},
+		legend: {
+			visible: false
+		}
+	});
+}
+
+//图四-不安全事件
+function fn_unsafe(data){
+	$("#unsafe_title").html(data.title);
+	$("#unsafe_value").attr("data-to",data.value.toFixed(2));
+	$("#unsafe_value").html(data.value.toFixed(2));
+
+	// 图表二-左
+	$('#unsafe_per').dxCircularGauge({
+		scale: {
+			startValue: data.startValue,
+			endValue: data.endValue,
+			majorTick: {
+				tickInterval: data.tickInterval
+			}
+		},
+		rangeContainer: {
+			palette: 'pastel',
+			width: 3,
+			ranges: [
+				{
+					startValue: 0,
+					endValue: data.endValue/4,
+					color: gaugesPalette[0]
+				},
+				{
+					startValue: data.endValue/4,
+					endValue: data.endValue/2,
+					color: gaugesPalette[1]
+				},
+				{
+					startValue: data.endValue/2,
+					endValue: data.endValue/4*3,
+					color: gaugesPalette[2]
+				},
+				{
+					startValue: data.endValue/4*3,
+					endValue: data.endValue,
+					color: gaugesPalette[3]
+				},
+			],
+		},
+		value: data.value,
+		valueIndicator: {
+			offset: 10,
+			color: '#2c2e2f',
+			spindleSize: 12
+		}
+	});
+
+	// 图表二-右
+	$("#unsafe_chart").dxChart({
+		dataSource: data.charts,
+		commonPaneSettings: {
+			border: {
+				visible: true,
+				color: '#f5f5f5'
+			}
+		},
+		commonSeriesSettings: {
+			type: "area",
+			argumentField: "time",
+			border: {
+				color: '#40bbea',
+				width: 1,
+				visible: true
+			}
+		},
+		series: [
+			{ valueField: "used", name: "Reqs per Second", color: '#40bbea', opacity: .5 },
+		],
+		commonAxisSettings: {
+			label: {
+				visible: true
+			},
+			grid: {
+				visible: true,
+				color: '#f5f5f5'
+			}
+		},
+		argumentAxis: {
+			valueMarginsEnabled: false,
+		},
+		legend: {
+			visible: false
+		}
+	});
+}
+
+//图一-安全得分
+function fn_safe(data){
+	$("#total").html(data.total);
+
+	var drive = data.drive.charts;
+	var es = data.es.charts;
+	var safe = data.safe.charts;
+
+	// Combine charts for filtering, grouped by time
+	var all_data_sources = [];
+
+	$.map(drive, function(arg, i){
+		all_data_sources.push({
+			time: 					arg.time,
+			requestsPerMinute: 		drive[i].used,
+			cpuUsage: 				es[i].used,
+			memoryUsed: 			safe[i].used
+		});
+	});
+	
+	// 图一
+	$("#range-chart").dxRangeSelector({
+		dataSource: all_data_sources,
+		size: {
+			height: 200
+		},
+		chart: {
+			series: [
+				{ argumentField: "time", valueField: "requestsPerMinute", color: '#68b828', opacity: .65 },
+				{ argumentField: "time", valueField: "cpuUsage", color: '#7c38bc', opacity: .65 },
+				{ argumentField: "time", valueField: "memoryUsed", color: '#40bbea', opacity: .65 }
+			]
+		},
+
+		selectedRangeChanged: function(e){
+			var filter = {
+				reqsPerMinuteData: [],
+				cpuUsageData: [],
+				memoryUsageData: []
+			};
+			
+			$.map(all_data_sources, function(arg, i)
+			{
+				if(date("U", e.startValue) <= date("U", arg.time) && date("U", e.endValue) >= date("U", arg.time))
+				{
+					filter.reqsPerMinuteData.push({
+						time: arg.time,
+						used: arg.requestsPerMinute
+					});
+					
+					filter.cpuUsageData.push({
+						time: arg.time,
+						used: arg.cpuUsage
+					});
+					
+					filter.memoryUsageData.push({
+						time: arg.time,
+						used: arg.memoryUsed
+					});
+				}
+			});
+			
+			$('#drive_chart').dxChart('instance').option('dataSource', filter.reqsPerMinuteData);
+			$('#es_chart').dxChart('instance').option('dataSource', filter.cpuUsageData);
+			$('#unsafe_chart').dxChart('instance').option('dataSource', filter.memoryUsageData);
+		}
+	});
+
+	// Resize charts
+	$(window).on('xenon.resize', function(){			
+		$("#drive_chart").data("dxChart").render();
+		$("#es_chart").data("dxChart").render();
+		$("#unsafe_chart").data("dxChart").render();
+	});
+}
+
+//获取车辆列表
+function fn_get_vehicles(data){
+	$.ajax({
+		url:ajax_106+'/get_vehicles',
+		type:'post',
+		dataType:'json',
+		data:data,
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_handle(data.data);
+		}
+	});
+
+	function fn_handle(items){
+		if(!items || items.length===0)return false;
+		var html = '';
+		items.forEach(function(el,index){
+			html += '<option value='+el.id+'><font><font>'+el.name+'</font></font></option>';
+		});
+		$("#plateNumber").html(html);
+		
+		fn_list([{id:info_login.data.extraid,name:info_login.data.extraname}],"only one");
+		fn_getCars(items,$("#company li a"));
+	}
+}
+
+$(function(){
+	var vehicleData = {
+		role_id:info_login.data.roleid,
+		extra_id:info_login.data.extraid,
+	};
+	fn_get_vehicles(vehicleData);//获取车辆列表
+
+	//点击展开列表
+	$(document).on('click','.menuChild',function(){
+		var companyId = $(this).attr("d-id");
+		var html = '<li><a><span class="title">加载中……</span></a></li>';
+		$(this).next('ul').html(html);
+		ajax_get_company_vehicles(companyId,$(this));//ajax-getCars
+	});
+
+	//点击右侧
+    $(document).on("click",".car",function(){
+    	var vehicle_id = $(this).attr("d-id");
+    	if(!vehicle_id)return false;
+
+    	var start = $("#start").val();
+		var end = $("#end").val();
+
+		if(!start)start = -1;
+		if(!end)end = -1;
+
+    	if(start===end&&start!==-1){
+    		toastr.error('开始时间不能大于结束时间！');//提示框
+    		return false;
+    	}
+
+    	if(start === -1){
+    		if(end !== -1){
+    			toastr.error('请选择开始时间');//提示框
+    			return false;
+    		}
+    	}
+
+    	if(end === -1){
+    		if(start !== -1){
+    			toastr.error('请选择结束时间');//提示框
+    			return false;
+    		}
+    	}
+
+    	var postData = {
+			vehicle_id:vehicle_id,
+			start:start,
+			end:end,
+		};
+
+		ajax_get_vehicle_history_scores_p2(postData)//ajax-重新获取接口
+    });
+
+    //右侧小窗HTML代码
+	var boxAlert = '<div class="boxAlert form-horizontal" style="position:relative;z-index:2"><div class="panel panel-default panel-border panel-shadow"><div class="panel-heading"><h3 class="panel-title">控制面板</h3><div class="panel-options"><a href="#" data-toggle="panel"><span class="collapse-icon">&ndash;</span> <span class="expand-icon">+</span></a> <a href="#" data-toggle="remove">&times;</a></div></div><div class="panel-body"><div class="form-group zoom"><label class="control-label z-label" for="field-1"><font><font>选择车辆：</font></font></label><select class="form-control verification z-content" id="plateNumber" d-error="请选择车辆"><option value=""><font><font>请选择</font></font></option></select></div><div class="form-group zoom"><label class="control-label z-label" for="field-1"><font><font>开始时间：</font></font></label><input type="text" class="form-control verification z-content" d-error="请输入开始时间" id="start" placeholder="" onclick="laydate.render({elem:this,type:\'datetime\',format:\'yyyy-MM-dd HH:mm\',show:true,trigger:\'click\',max:0});"></div><div class="form-group"><label class="control-label z-label" for="field-1"><font><font>结束时间：</font></font></label><input type="text" class="form-control verification z-content" d-error="请输入结束时间" id="end" placeholder="" onclick="laydate.render({elem:this,type:\'datetime\',format:\'yyyy-MM-dd HH:mm\',show:true,trigger:\'click\',max:0});"</div><div style="text-align:left;margin-left:95px"><button class="btn btn-orange bg-lg" id="btn_ok">确定</button></div></div></div></div>';
+	$("#btn_open").click(function(){
+		$("#boxAlert").append(boxAlert);
+		var vehicleData = {
+			role_id:info_login.data.roleid,
+			extra_id:info_login.data.extraid,
+		};
+		fn_get_vehicles(vehicleData);//获取车辆列表
+	});
+
+	$(document).on("click","#btn_ok",function(){
+		var vehicle_id = $("#plateNumber").val();
+		var start = $("#start").val();
+		var end = $("#end").val();
+		if(!vehicle_id){
+			toastr.error('请选择特定车辆');//提示框
+			return false;
+		}
+
+		if(!start)start = -1;
+		if(!end)end = -1;
+
+    	if(start===end&&start!==-1){
+    		toastr.error('开始时间不能大于结束时间！');//提示框
+    		return false;
+    	}
+
+    	if(start === -1){
+    		if(end !== -1){
+    			toastr.error('请选择开始时间');//提示框
+    			return false;
+    		}
+    	}
+
+    	if(end === -1){
+    		if(start !== -1){
+    			toastr.error('请选择结束时间');//提示框
+    			return false;
+    		}
+    	}
+
+		var postData = {
+			url:ajax_106+'/get_vehicle_history_scores_p2',
+			vehicle_id:vehicle_id,
+			start:start,
+			end:end,
+		};
+		ajax_get_vehicle_history_scores_p2(postData)//ajax-重新获取接口
+	});
+});
+</script>

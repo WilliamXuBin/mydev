@@ -1,0 +1,239 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+	.analysis-main{margin:40px 0;}
+</style>
+
+<div class="analysis zoom">
+	<div id="sel_result"></div>
+
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="sel_vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_start">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom" id="item_end">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search_vehicleoverspeed">确定</button></div>
+	</div>
+
+	<div class="analysis-loading"></div>
+	<div class="analysis-main"></div>
+</div>
+<script type="text/javascript">
+	var sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:[]});
+
+	var tt = {
+		elem:$("#ttable"),
+		titles:['序列号','车牌号','车辆所属公司','超速次数','超速里程(km)','超速时长','操作'],
+		items:"请选择条件查询",
+	};
+	var ttable = new fn_ttable(tt);
+
+	//配置当前时间
+	function init_data(){
+		$("#menu_start").val(format_date());
+		$("#menu_end").val(format_date({dd:"now"}));
+	}
+	init_data();
+
+	//获取车辆列表
+	function ajax_get_vehicles(){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:"json",
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_get_vehicles(data.data);
+			}
+		});
+	}
+
+	//fn-获取车辆
+	function fn_get_vehicles(items){
+		var options = [{name:"请选择"}];
+		items.forEach(function(el,index){
+			options.push({val:el.id,name:el.name});
+		});
+		sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:options,selected_option:1,result:$("#sel_result")});
+		$("#search_vehicleoverspeed").click();
+	}
+
+	//ajax-超速图表数据
+	function ajax_get_vehicle_overspeed_chart_data(set){
+		fn_table_loading();//列表加载中
+		$.ajax({
+			url:ajax_106+'/get_road_bump_info',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+
+				var obj = {
+					title:"纵向加速度 m/s2",
+					infoX:data.infoX,
+					infoY:data.infoY,
+					infoYType:"arr",
+				};
+				fn_chart([obj]);
+			}
+		});
+	}
+
+	function fn_chart(items,type){
+		if(!items || items.length === 0){
+			$(".single-echart-none").show();
+			return;
+		}
+		
+		var colors = ["#008df2","#12e6d4","#fdca00","#ff482f"];
+
+		$(".analysis-main").html("");
+		console.log(items)
+		items.forEach(function(el,index){
+			var html = '<div class="single-item"><div class="single-item-title">'+el.title+'</div><div class="single-item-content single-echart-main"><div class="single-echart" id="m'+index+'"></div><div class="single-echart-none">未查询到结果</div><div class="single-echart-legend" style="display:none;"><span class="legend-1">30km/h以下</span><span class="legend-2">30km/h以下</span><span class="legend-3">30km/h以下</span><span class="legend-4">30km/h以下</span></div></div></div>';
+			$(".analysis-main").append(html);
+			console.log(el)
+			console.log(el.infoX.length)
+			if(el.infoX.length === 0){
+				console.log(123)
+				$(".single-echart-none").show();
+				return;
+			}else{
+				$(".single-echart-none").hide();
+			}
+
+			var series_data = [];
+			if(el.infoYType == "arr"){
+				el.infoY.forEach(function(el_infoY,index_infoY){
+					series_data.push({
+						name:el_infoY.name,
+			            type:'line',
+			            symbol: 'none',
+			            areaStyle: {
+				            	normal: {
+				            	opacity:0.15,
+				            }
+				        },
+				        itemStyle:{
+				        	normal:{
+				        		color:colors[index_infoY]
+				        	}
+				        },
+			            data:el_infoY.value
+					});
+				});
+			}
+
+			var myChart = echarts.init(document.getElementById("m"+index));
+
+	        var option = {
+	        	color:colors,
+			    tooltip : {
+			        trigger: 'axis',
+			        axisPointer: {
+			            type: 'cross',
+			            label: {
+			                backgroundColor: '#6a7985'
+			            }
+			        }
+			    },
+			    grid: {
+			        left: '3%',
+			        right: '5%',
+			        bottom: '3%',
+			        top: '5%',
+			        containLabel: true
+			    },
+			    xAxis : [
+			        {
+			            type : 'category',
+			            boundaryGap : false,
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            axisTick:{show:false},
+			            splitLine:{show:false},
+			            data : el.infoX
+			        }
+			    ],
+			    yAxis : [
+			        {
+			            type : 'value',
+			            axisLabel:{
+			            	textStyle:{
+			            		color:"#fff"
+			            	},
+			            },
+			            axisLine:{show:false},
+			            //axisTick:{show:false},
+			            splitLine:{show:false},
+			        }
+			    ],
+			    series:series_data
+			};
+
+	        myChart.setOption(option);
+		});
+		if(type)return;
+		//$(".single-echart-none").hide();
+	}
+
+	$(function(){
+		ajax_get_vehicles();//获取车辆列表
+
+		$(document).off("click","#search_vehicleoverspeed").on("click","#search_vehicleoverspeed",function(){
+			if(!sel_vehicle.value){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			var menu_start = $("#menu_start").val();
+			var menu_end = $("#menu_end").val();
+
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!menu_end){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			if(menu_start >= menu_end){
+				toastr.error('开始时间不能大于等于结束时间！');//提示框
+				return;
+			}
+
+			//if(!daysMath({start:startTime,end:endTime}))return;
+
+			var data_set = {
+				vehicle_id:sel_vehicle.value,
+				start:menu_start,
+				end:menu_end,
+			};
+
+			ajax_get_vehicle_overspeed_chart_data(data_set);
+		});
+	});
+</script>

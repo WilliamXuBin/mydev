@@ -1,0 +1,331 @@
+<style>
+	.form-inline .form-control{width:100%;}
+	.ttle-title{text-align:center;font-size:20px;margin-bottom:10px;}
+	.ttle-date{text-align:center;color:#999;}
+	.link{color:#f00;text-decoration:underline;cursor:pointer;}
+	.link:hover{color:#f00;text-decoration:underline;cursor:pointer;}
+</style>
+
+<div class="panel panel-default">
+	<ol class="breadcrumb bc-1">
+		<li>
+			<a href="index.html?sign=index"><i class="fa-home"></i><font><font>首页</font></font></a>
+		</li>
+		<li>
+			<a href="index.html?sign=monitor"><font><font>总体安全监控</font></font></a>
+		</li>
+		<li class="active">
+			<strong><font><font>不安全事件管理</font></font></strong>
+		</li>
+	</ol>
+
+	<div class="row">
+		<div class="col-sm-12">
+			<div class="panel-default form-inline">
+				<!-- <div class="oitem zoom" id="boxCompany">
+					<div class="oitem-title">选择公司：</div>
+					<div class="oitem-content">
+						<select class="form-control verification" id="selCompany">
+							<option value=""><font><font>请选择1</font></font></option>
+						</select>
+					</div>
+				</div> -->
+				<div class="oitem zoom">
+					<div class="oitem-title">选择车辆：</div>
+					<div class="oitem-content">
+						<select class="form-control verification" id="selVehicles">
+							<option value=""><font><font>请选择</font></font></option>
+						</select>
+					</div>
+				</div>
+				<div class="oitem zoom">
+					<div class="oitem-title">选择时间：</div>
+					<div class="oitem-content">
+						<select class="form-control verification" id="days">
+							<option value=""><font><font>请选择</font></font></option>
+							<option value="1"><font><font>今天</font></font></option>
+							<option value="2"><font><font>昨天</font></font></option>
+							<option value="3"><font><font>最近3天</font></font></option>
+							<option value="7"><font><font>最近7天</font></font></option>
+							<option value="30"><font><font>最近30天</font></font></option>
+						</select>
+					</div>
+				</div>
+				<div class="oitem zoom">
+					<div class="oitem-title">开始时间：</div>
+					<div class="oitem-content">
+						<input type="text" class="form-control" id="start" placeholder="请选择" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',show:true,trigger:'click',max:0});" />
+					</div>
+				</div>
+				<div class="oitem zoom">
+					<div class="oitem-title">结束时间：</div>
+					<div class="oitem-content">
+						<input type="text" class="form-control" id="end" placeholder="请选择" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',show:true,trigger:'click',max:0});" />
+					</div>
+				</div>
+				<div class="oitem zoom">
+					<div class="oitem-title">排序：</div>
+					<div class="oitem-content">
+						<select class="form-control verification" id="selOrder">
+							<option value=""><font><font>请选择</font></font></option>
+							<option value="1"><font><font>从低到高</font></font></option>
+							<option value="2"><font><font>从高到低</font></font></option>
+						</select>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-sm-12">
+			<button class="btn btn-orange" id="search">确定</button>
+		</div>
+	</div>
+
+	<div class="panel-body">
+		<table class="table table-bordered table-striped" id="example-2">
+			<thead id="table_tle">
+				<tr>
+					<th>序号</th>
+					<th>车牌号</th>
+					<th>开始时间</th>
+					<th>结束时间</th>
+					<th>不安全事件</th>
+					<th>发生次数</th>
+					<th>与同行相比</th>
+					<th>操作</th>
+				</tr>
+			</thead>
+			
+			<tbody id="table"></tbody>
+		</table>
+	</div>
+</div>
+<script type="text/javascript">
+
+//ajax-获取总公司下所有分公司
+function ajax_get_enterprise_companys(){
+	$.ajax({
+		url:ajax_106+'/get_enterprise_companys',
+		type:'post',
+		dataType:'json',
+		data:{
+			extra_id:info_login.data.extraid,
+		},
+		async:false,
+	}).then(function(data){
+		if(data.code === "0000"){
+			data = data.data;
+			if(data && data.length>0){
+				var html = '<option value=""><font><font>请选择</font></font></option>';
+				data.forEach(function(el,index){
+					html += '<option value="'+el.id+'"><font><font>'+el.name+'</font></font></option>';
+				});
+				$("#selCompany").html(html);
+			}
+		}
+	});
+}
+
+//ajax-获取特定分公司的车辆列表
+function ajax_get_company_vehicles(id){
+	$.ajax({
+		url:ajax_106+'/get_company_vehicles',
+		type:'post',
+		dataType:'json',
+		data:{
+			extra_id:id,
+		},
+		async:false,
+	}).then(function(data){
+		if(data.code === "0000"){
+			data = data.data;
+			if(data && data.length>0){
+				var html = '<option value=""><font><font>请选择</font></font></option>';
+				data.forEach(function(el,index){
+					html += '<option value="'+el.id+'"><font><font>'+el.name+'</font></font></option>';
+				});
+				$("#selVehicles").html(html);
+			}
+		}
+	});
+}
+
+//ajax-getCarsList
+function ajax_get_vehicles(){
+	$.ajax({
+		url:ajax_106+'/get_vehicles',
+		type:'post',
+		dataType:'json',
+		async:false,
+		data:{
+			role_id:info_login.data.roleid,
+			extra_id:info_login.data.extraid,
+		}
+	}).then(function(data){
+		if(data.code === "0000"){
+			data = data.data;
+			if(data && data.length>0){
+				var html = '<option value=""><font><font>请选择</font></font></option>';
+				data.forEach(function(el,index){
+					html += '<option value="'+el.id+'"><font><font>'+el.name+'</font></font></option>';
+				});
+				$("#selVehicles").html(html);
+			}
+		}
+	});
+}
+
+//ajax-
+function ajax_post(set){
+	fn_table_loading();//列表加载中
+	$.ajax({
+		url:ajax_106+'/get_one_vehicle_exception',
+		type:'post',
+		dataType:'json',
+		data:{
+			extra_id:set.extra_id,
+			role_id:set.role_id,
+			days:set.days,
+			start:set.start,
+			end:set.end,
+			vehicle_id:set.vehicle_id,
+		},
+	}).then(function(data){
+		if(data.code === "0000"){
+			data = data.data;
+			console.log(data)
+			fn_lists(data);
+		}
+	});
+}
+
+function sortNumber(a,b){
+	return a.avg_score1 - b.avg_score1
+}
+
+function fn_lists(items){
+	if(!items || items.length==0){
+		var len_td = $("#example-2 thead tr").eq(0).find("th").length;
+		var html_noData = '<tr><td colspan='+len_td+' style="text-align:center">没有找到相关数据</td></tr>';
+		$("#table").html(html_noData);
+		cbr_replace();//列表优化
+		return;
+	}
+
+	var str = $("#selOrder").val();
+	if(str == 1){
+		function sortNumber(a,b){
+			return parseFloat(a.compare)-parseFloat(b.compare);
+		}
+		items = items.sort(sortNumber);
+	}else if(str == 2){
+		function sortNumber(a,b){
+			return parseFloat(b.compare)-parseFloat(a.compare);
+		}
+		items = items.sort(sortNumber);
+	}
+
+	var html = "";
+	items.forEach(function(el,index){
+		index++;
+		var obj = {
+			type:el.type,
+			end:el.end,
+			start:el.start,
+			id:el.id,
+		};
+		var html_operation = parseInt(el.num)?'<a class="link" d-data=\''+JSON.stringify(obj)+'\'>查看</a>':"";
+		html += '<tr><td>'+index+'</td><td>'+el.licence+'</td><td>'+el.start+'</td><td>'+el.end+'</td><td>'+el.incident+'</td><td>'+el.num+'</td><td>'+el.compare+'</td><td>'+html_operation+'</td></tr>';
+	});
+	$("#table").html(html);
+	cbr_replace();//列表优化
+}
+
+$(function(){
+	fn_lists();
+
+	var Troleid = parseInt(info_login.data.roleid/100);
+	if(Troleid == 3){
+		//ajax_get_enterprise_companys();//ajax-获取总公司下所有分公司
+		ajax_get_vehicles();
+	}else if(Troleid == 4){
+		//$("#selCompany").html('<option value=""><font><font>'+info_login.data.extraname+'</font></font></option>');
+		ajax_get_vehicles();
+	}else{
+		//$("#boxCompany").hide();
+		ajax_get_vehicles();
+	}
+
+	//请选择公司
+	$("#selCompany").change(function(){
+		var id = $(this).val();
+		if(id){
+			ajax_get_company_vehicles(id);//ajax-获取特定分公司的车辆列表
+		}
+	});
+
+	//点击搜索
+	$("#search").click(function(){
+		var vehicle_id = $("#selVehicles").val();//获取车辆
+		var start = $("#start").val();//获取开始时间
+		var end = $("#end").val();//获取结束时间
+		var days = $("#days").val();//获取选择时间
+
+		if(!vehicle_id){
+			toastr.error('请选择车辆');//提示框
+			return;
+		}
+
+		if(!start && !end && !days){
+			toastr.error('请选择时间');//提示框
+			return;
+		}
+
+		if(!start && !days){
+			toastr.error('请选择开始时间');//提示框
+			return;
+		}
+		
+		if(!end && !days){
+			toastr.error('请选择结束时间');//提示框
+			return;
+		}
+
+		if(start && end && start > end){
+			toastr.error('开始时间不能大于结束时间！');//提示框
+			return;
+		}
+
+		var postData = {
+			extra_id:info_login.data.extraid,
+			role_id:info_login.data.roleid,
+			vehicle_id:vehicle_id,
+			days:days,
+			start:start,
+			end:end,
+		};
+		ajax_post(postData);//ajax-列表
+	});
+
+	//点击跳页
+	$(document).off("click",".link").on("click",".link",function(){
+		var str = $(this).attr("d-data");
+		window.sessionStorage.infoMonitorAdmin = str;
+		ajax_nav("monitor-track");//导航路由
+	});
+
+	if(window.sessionStorage.infoMonitor){
+		var infoMonitor = JSON.parse(window.sessionStorage.infoMonitor);
+		if(infoMonitor.company){
+			$("#selCompany").val(infoMonitor.company);
+			ajax_get_company_vehicles(infoMonitor.company);//ajax-获取特定分公司的车辆列表
+		}
+		$("#selVehicles").val(infoMonitor.vehicle_id);
+		$("#days").val(infoMonitor.days);
+		$("#start").val(infoMonitor.start);
+		$("#end").val(infoMonitor.end);
+		$("#search").click();
+	}
+});
+</script>

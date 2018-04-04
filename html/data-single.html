@@ -1,0 +1,522 @@
+<style>
+	/**加载**/
+	.loading_track{width:100%;height:100%;position:absolute;top:0px;left:0px;z-index:9;background:#f8f8f8;}
+
+	.single-box{width:calc(33.3% - 6px);padding:20px 0px;background:rgba(60, 190, 224,0.4);float:left;margin-right:9px;}
+	.single-box:last-child{margin-right:0px;}
+	.single-box-img{width:110px;border-right:2px solid #2381a1;float:left;text-align:center;}
+	.single-box-img i{width:100%;height:61px;background-repeat:no-repeat;background-position:center;display:block;}
+	.single-box-img span{color:#fff;line-height:30px;display:inline-block;}
+	.single-box .icon1{background-image:url('img/single/safe.png')}
+	.single-box .icon2{background-image:url('img/single/driver.png')}
+	.single-box .icon3{background-image:url('img/single/envir.png')}
+	.single-box-content{float:right;width:calc(100% - 130px);}
+	.single-box-score{font-size:36px;margin:5px 0 5px 0;}
+	.single-box-scoreColor100{color:#00e7d5;}
+	.single-box-scoreColor80{color:#fecb00;}
+	.single-box-scoreColor60{color:#ff9300;}
+	.single-box-txt{font-size:12px;color:#3cbee0;margin-bottom:3px;}
+	.single-box-info{font-size:12px;color:#fff;}
+
+	.single-item-score{position:absolute;top:20px;left:20px;height:30px;line-height:30px;color:#fff;font-size:30px;}
+	.single-round{width:110px;min-height:100px;background:url('img/single/round.png') no-repeat;background-position:center top 20px;position:absolute;top:20px;right:20px;z-index:2;}
+	.single-round-main{position:relative;}
+	.single-round-pointer{width:45.8px;height:45.8px;margin:47px auto 0px auto;text-align:center;}
+	.single-round-animation{animation:myfirst 0.6s;}
+	.tselect ul{max-height:300px;overflow-y:scroll;}
+
+	.single-round-txt1,.single-round-txt2,.single-round-txt3{color:#fff;position:absolute;}
+	.single-round-txt1{bottom:10px;left:0px;}
+	.single-round-txt2{top:0px;left:50px;}
+	.single-round-txt3{bottom:10px;right:7px;}
+	.single-round-acceleration{position:absolute;bottom:-43px;left:0px;width:100%;color:#fff;text-align:center;}
+	.single-round-acceleration span{display:block;color:#fff;font-size:20px;}
+</style>
+<style id=dynamic></style><!--仪表盘动画-->
+<div class="single">
+	<div class="singleMenu zoom" id="single">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="btn_single">确定</button></div>
+	</div>
+	<div class="single-none"><span>您搜索的车辆已离线</span></div>
+	<div class="single-main single-main-opacity0">
+		<div class="single-item">
+			<div class="single-item-title">实时监控</div>
+			<div class="single-item-content zoom">
+				<div class="single-box zoom">
+					<div class="single-box-img">
+						<i class="icon1"></i>
+						<span>安全得分</span>
+					</div>
+					<div class="single-box-content">
+						<div class="single-box-score single-box-scoreColor100" id="score_safe">--</div>
+						<div class="single-box-txt">安全得分由驾驶得分和环境得分权衡得出</div>
+						<div class="single-box-info">80分以上优 / 60-80分中 / 60以下差</div>
+					</div>
+				</div>
+				<div class="single-box zoom">
+					<div class="single-box-img">
+						<i class="icon2"></i>
+						<span>驾驶得分</span>
+					</div>
+					<div class="single-box-content">
+						<div class="single-box-score single-box-scoreColor100" id="score_driver">--</div>
+						<div class="single-box-txt">安全得分由驾驶得分和环境得分权衡得出</div>
+						<div class="single-box-info">80分以上优 / 60-80分中 / 60以下差</div>
+					</div>
+				</div>
+				<div class="single-box zoom">
+					<div class="single-box-img">
+						<i class="icon3"></i>
+						<span>环境得分</span>
+					</div>
+					<div class="single-box-content">
+						<div class="single-box-score single-box-scoreColor100" id="score_envir">--</div>
+						<div class="single-box-txt">安全得分由驾驶得分和环境得分权衡得出</div>
+						<div class="single-box-info">80分以上优 / 60-80分中 / 60以下差</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="single-item">
+			<div class="single-item-title">当前速度</div>
+			<div class="single-item-content single-echart-main">
+				<div class="single-item-score" id="score_title_speed"></div>
+				<div class="single-round">
+					<div class="single-round-main">
+						<div class="single-round-pointer">
+							<img src="img/single/pointer.png" />
+						</div>
+					</div>
+					<div class="single-round-txt1">-5</div>
+					<div class="single-round-txt2">0</div>
+					<div class="single-round-txt3">5</div>
+					<div class="single-round-acceleration">
+						<span>0.00</span>
+						当前车辆加速度
+					</div>
+				</div>
+				<div class="single-echart-overflow zoom">
+					<div class="single-echart" id="chart_speed"></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="single-item">
+			<div class="single-item-title">安全得分</div>
+			<div class="single-item-content single-echart-main">
+				<div class="single-item-score" id="score_title_safe"></div>
+				<div class="single-echart-overflow zoom">
+					<div class="single-echart" id="chart_safe"></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="single-item">
+			<div class="single-item-title">驾驶得分<span class="single-item-href" d-href="data-single-driver">更多驾驶得分 ></span></div>
+			<div class="single-item-content single-echart-main">
+				<div class="single-item-score" id="score_title_driver"></div>
+				<div class="single-echart-overflow zoom">
+					<div class="single-echart" id="chart_driver"></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="single-item">
+			<div class="single-item-title">环境得分<span class="single-item-href" d-href="data-single-envir">更多环境得分 ></span></div>
+			<div class="single-item-content single-echart-main">
+				<div class="single-item-score" id="score_title_envir"></div>
+				<div class="single-echart-overflow zoom">
+					<div class="single-echart" id="chart_envir"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	var sel_vehicle = new fn_tselect({elem:$("#vehicle"),options:[{name:"请选择",val:""}]});
+
+	var num_speed = 0;//累计-速度
+	var times_speed = [];//x轴-速度
+	var items_speed = [];//y轴-速度
+	var acceleration_speed = [];//y轴2-速度
+
+	var num_safe = 0;//累计-安全得分
+	var times_safe = [];//x轴-安全得分
+	var items_safe = [];//y轴-安全得分
+
+	var num_driver = 0;//累计-驾驶得分
+	var times_driver = [];//x轴-驾驶得分
+	var items_driver = [];//y轴-驾驶得分
+
+	var num_envir = 0;//累计-环境得分
+	var times_envir = [];//x轴-环境得分
+	var items_envir = [];//y轴-环境得分
+
+	//ajax-获取特定分公司的车辆列表-刷新数据
+	function ajax_get_company_vehicles_info(){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:'json',
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(data && data.length>0){
+					var options = [{name:"请选择",val:""}];
+					data.forEach(function(el,index){
+						options.push({name:el.name+"("+el.status+")",val:el.id});
+					});
+
+					var selected = sel_vehicle.value;
+					sel_vehicle = new fn_tselect({elem:$("#vehicle"),options:options,selected:selected});
+				}
+			}
+		});
+	}
+
+	//ajax-获取特定分公司的车辆列表
+	function ajax_get_company_vehicles(){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:'json',
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				fn_get_vehicles(data);//fn-获取特定分公司的车辆列表
+			}
+		});
+	}
+	ajax_get_company_vehicles();//ajax-获取特定分公司的车辆列表
+
+	//fn-获取特定分公司的车辆列表
+	function fn_get_vehicles(data){
+		if(data && data.length>0){
+			var options = [{name:"请选择",val:""}];
+			var selected = data[0].id;
+			data.forEach(function(el,index){
+				if(el.status === "在线")selected=el.id;
+				options.push({name:el.name+"("+el.status+")",val:el.id});
+			});
+
+			sel_vehicle = new fn_tselect({elem:$("#vehicle"),options:options,selected:selected});
+
+			//判断是否有默认值
+			if(window.sessionStorage.info_dataSingle){
+				var info_dataSingle = JSON.parse(window.sessionStorage.info_dataSingle);
+				sel_vehicle.selected(info_dataSingle.vehicle_id);
+				clear_storage(["info_dataSingle"]);// 删除本地存储
+			}
+
+			$("#btn_single").click();
+		}
+	}
+
+	//ajax-获取特定车辆每秒数据
+	function ajax_get_vehicle_per_second_data(id){
+		ajax_get_company_vehicles_info();//ajax-获取特定分公司的车辆列表-刷新数据
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_vehicle_per_second_data',
+			type:"post",
+			dataType:"json",
+			data:{vehicle_id:sel_vehicle.value}
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				fn_speed(data);//fn-速度
+				fn_safe(data);//fn-安全得分
+				fn_driver(data);//fn-驾驶得分
+				fn_envir(data);//fn-环境得分
+
+				$("#score_safe").html(data.score.safe);//安全得分
+				$("#score_driver").html(data.score.driver);//驾驶得分
+				$("#score_envir").html(data.score.envir);//环境得分
+
+				fn_score($("#score_safe"),data.score.safe);//安全得分
+				fn_score($("#score_driver"),data.score.driver);//驾驶得分
+				fn_score($("#score_envir"),data.score.envir);//环境得分
+
+				function fn_score(elem,score){
+					if(score<60){
+						elem.attr("class","single-box-score single-box-scoreColor60");
+					}else if(score<80){
+						elem.attr("class","single-box-score single-box-scoreColor80");
+					}else{
+						elem.attr("class","single-box-score single-box-scoreColor100");
+					}
+				}
+				$(".single-main").removeClass("single-main-opacity0").addClass("single-main-opacity1");
+				$(".single-none").hide();
+			}else{
+				$(".single-main").removeClass("single-main-opacity1").addClass("single-main-opacity0");
+				$(".single-none").show();
+			}
+		});
+	}
+
+	//图表
+	//	config:{
+	//		elem:"id",//图表ID
+	//		colors:["colors"],//图表颜色
+	//		x:[],//图表x轴
+	//		y:[{name:"",val:0}],//图表y轴
+	//		echartWidth:100,//图表固定宽
+	//		boxWidth:100,//图表不定宽
+	//	}
+	//
+	function fn_myChart(config){
+		var myChart = echarts.init(document.getElementById(config.elem));
+
+		var y = [];
+		config.y.forEach(function(el,index){
+			var obj = {
+	            name:el.name,
+	            type:'line',
+	            areaStyle: {normal: {opacity:0.8}},
+	            symbol: 'none',
+	            lineStyle:{normal:{width:0}},
+	            data:el.val
+	        };
+	        y.push(obj);
+		});
+
+		var option = {
+			color:config.colors,
+		    tooltip : {
+		        trigger: 'axis',
+		        axisPointer: {
+		            type: 'cross',
+		            label: {
+		                backgroundColor: '#6a7985'
+		            }
+		        }
+		    },
+		    grid: {
+		        left: config.echartWidth-config.boxWidth,
+		        right: '0%',
+		        bottom: '0%',
+		        top:'0%',
+		        width:config.boxWidth,
+		    },
+		    xAxis : [
+		        {
+		            type : 'category',
+		            boundaryGap : false,
+		            data : config.x,
+		            axisLabel:{show:false},
+		            axisLine:{show:false},
+		            axisTick:{show:false},
+		            splitLine:{show:false},
+		        }
+		    ],
+		    yAxis : [
+		        {
+		            type : 'value',
+		            axisLabel:{show:false},
+		            axisLine:{show:false},
+		            axisTick:{show:false},
+		            splitLine:{show:false},
+		            max:130,
+		        }
+		    ],
+		    series : y
+		};
+
+		// 使用刚指定的配置项和数据显示图表。
+		myChart.setOption(option);
+	}
+
+	//fn-速度
+	var acceleration_old = 0;//加速度-旧
+	function fn_speed(data){
+		num_speed++;//累计-速度
+		times_speed.push(data.speed.time);//x轴-速度
+		items_speed.push(data.speed.value);//y轴-速度
+		acceleration_speed.push(data.speed.acceleration);//y轴2-速度
+
+		$("#score_title_speed").html(data.speed.value+"km/h");//标题
+		$(".single-round-acceleration span").html(data.speed.acceleration+"km/h");//加速度
+
+		if(times_speed.length>20){
+			times_speed.splice(0,1);
+			items_speed.splice(0,1);
+			acceleration_speed.splice(0,1);
+		}
+
+		var echartWidth = $(".single-echart-overflow").width();
+		var boxWidth = echartWidth;
+		if(num_speed<=20){boxWidth = echartWidth/20*num_speed;}
+
+		var config = {
+	        elem:"chart_speed",
+	        colors:["#008af5","#005bcf"],
+	        x:times_speed,
+	        y:[{name:"当前速度",val:items_speed},{name:"加速度",val:acceleration_speed}],
+	        echartWidth:echartWidth,//图表的固定宽
+	        boxWidth:boxWidth//图表不定宽
+	    };
+		fn_myChart(config);//图表-速度
+
+		//仪表盘动画
+		var style = document.getElementById("dynamic");
+		var speed_now = data.speed.acceleration*24;
+		speed_now = speed_now>120?speed_now=120:speed_now;
+		speed_now = speed_now<-120?speed_now=-120:speed_now;
+
+		
+	    style.innerHTML = '@-webkit-keyframes myfirst{from {transform: rotate('+acceleration_old+'deg);}to {transform: rotate('+speed_now+'deg);}}';
+	    $(".single-round-pointer").removeClass("single-round-animation");
+	    $(".single-round-pointer").css("transform","rotate("+acceleration_old+"deg)");
+	    setTimeout(function(){$(".single-round-pointer").addClass("single-round-animation");},500);
+
+	    acceleration_old = speed_now;//加速度-旧
+	}
+
+	//fn-安全得分
+	function fn_safe(data){
+		num_safe++;//累计-安全得分
+		times_safe.push(data.safe.time);//x轴-安全得分
+		items_safe.push(data.safe.value);//y轴-安全得分
+
+		$("#score_title_safe").html(data.safe.value);//标题
+
+		if(times_safe.length>20){
+			times_safe.splice(0,1);
+			items_safe.splice(0,1);
+		}
+
+		var echartWidth = $(".single-echart-overflow").width();
+		var boxWidth = echartWidth;
+		if(num_safe<=20){boxWidth = echartWidth/20*num_safe;}
+
+		var config = {
+	        elem:"chart_safe",
+	        colors:["#00e7d5"],
+	        x:times_safe,
+	        y:[{name:"安全得分",val:items_safe}],
+	        echartWidth:echartWidth,//图表的固定宽
+	        boxWidth:boxWidth//图表不定宽
+	    };
+		fn_myChart(config);//图表-速度
+	}
+
+	//fn-驾驶得分
+	function fn_driver(data){
+		num_driver++;//累计-驾驶得分
+		times_driver.push(data.driver.time);//x轴
+		items_driver.push(data.driver.value);//y轴
+
+		$("#score_title_driver").html(data.driver.value);//标题
+
+		if(times_driver.length>20){
+			times_driver.splice(0,1);
+			items_driver.splice(0,1);
+		}
+
+		var echartWidth = $(".single-echart-overflow").width();
+		var boxWidth = echartWidth;
+		if(num_driver<=20){boxWidth = echartWidth/20*num_driver;}
+
+		var config = {
+	        elem:"chart_driver",
+	        colors:["#fecb00"],
+	        x:times_driver,
+	        y:[{name:"驾驶得分",val:items_driver}],
+	        echartWidth:echartWidth,//图表的固定宽
+	        boxWidth:boxWidth//图表不定宽
+	    };
+		fn_myChart(config);//图表-速度
+	}
+
+	//fn-环境得分
+	function fn_envir(data){
+		num_envir++;//累计-驾驶得分
+		times_envir.push(data.envir.time);//x轴
+		items_envir.push(data.envir.value);//y轴
+
+		$("#score_title_envir").html(data.envir.value);//标题
+
+		if(times_envir.length>20){
+			times_envir.splice(0,1);
+			items_envir.splice(0,1);
+		}
+
+		var echartWidth = $(".single-echart-overflow").width();
+		var boxWidth = echartWidth;
+		if(num_envir<=20){boxWidth = echartWidth/20*num_envir;}
+
+		var config = {
+	        elem:"chart_envir",
+	        colors:["#ff9f00"],
+	        x:times_envir,
+	        y:[{name:"环境得分",val:items_envir}],
+	        echartWidth:echartWidth,//图表的固定宽
+	        boxWidth:boxWidth//图表不定宽
+	    };
+		fn_myChart(config);//图表-速度
+	}
+
+	$(function(){
+		//点击确定
+		$(document).off("click","#btn_single").on("click","#btn_single",function(){
+			console.log(123)
+			num_speed = 0;//累计-速度
+			times_speed = [];//x轴-速度
+			items_speed = [];//y轴-速度
+			acceleration_speed = [];//y轴2-速度
+
+			num_safe = 0;//累计-安全得分
+			times_safe = [];//x轴-安全得分
+			items_safe = [];//y轴-安全得分
+
+			num_driver = 0;//累计-驾驶得分
+			times_driver = [];//x轴-驾驶得分
+			items_driver = [];//y轴-驾驶得分
+
+			num_envir = 0;//累计-环境得分
+			times_envir = [];//x轴-环境得分
+			items_envir = [];//y轴-环境得分
+			
+			clearTimer();
+			timer[0] = setInterval(ajax_get_vehicle_per_second_data,1000);
+		});
+
+		//点击跳页
+		$(document).off("click",".single-item-href").on("click",".single-item-href",function(){
+			var obj = {
+				vehicle_id:sel_vehicle.value
+			};
+			window.sessionStorage.info_dataSingle_detail = JSON.stringify(obj);
+
+			var href = $(this).attr("d-href");
+			
+			clearTimer();
+			ajax_nav(href);
+		});
+
+		//点击下拉框
+		$(document).on("click","#single .tselect-title",function(){
+			clearTimer();
+		});
+
+		//失去焦点下拉框
+		$(document).on("blur","#single .tselect",function(){
+			clearTimer();
+			timer[0] = setInterval(ajax_get_vehicle_per_second_data,1000);
+		});
+	});
+</script>

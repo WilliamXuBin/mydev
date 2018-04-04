@@ -1,0 +1,398 @@
+<style>
+#container{width:100%;height:100%;}
+.btnInfo{margin:0;}
+.page-container .main-content{padding:10px}
+
+/**信息载体窗口**/
+.infoWindow{position: relative;top:30px;right:0px;width:300px;min-height:100px;padding:8px;background-color: #FFFFFF; border: #cccccc solid 1px;border-radius: 3px;}
+.infoWindow-title{height:30px;border-bottom:1px solid #ccc;}
+.infoWindow-title-txt{height:30px;width:calc(100% - 30px);overflow:hidden;float:left;}
+.infoWindow-title-close{width:30px;height:30px;float:right;text-align:center;cursor:pointer;}
+.infoWindow-box{padding-top:5px;}
+.infoWindow-btn{text-align:right;}
+
+/**信息载体窗口三角形**/
+.infoWindow:before{
+    box-sizing: content-box;
+    width: 0px;
+    height: 0px;
+    position: absolute;
+    bottom: -16px;
+    left:50%;
+    margin-left:-4px;
+    padding:0;
+    border-bottom:8px solid transparent;
+    border-top:8px solid #FFFFFF;
+    border-left:8px solid transparent;
+    border-right:8px solid transparent;
+    display: block;
+    content:'';
+    z-index: 12;
+}
+.infoWindow:after{
+    box-sizing: content-box;
+    width: 0px;
+    height: 0px;
+    position: absolute;
+    bottom: -18px;
+    left:50%;
+    margin-left:-4.5px;
+    padding:0;
+    border-bottom:9px solid transparent;
+    border-top:9px solid #cccccc;
+    border-left:9px solid transparent;
+    border-right:9px solid transparent;
+    display: block;
+    content:'';
+    z-index:10
+}
+
+.carNav{position:absolute;top:200px;right:200px;z-index:9;width:300px;height:300px;background-color:rgba(20,20,29,0.9);border-radius:3px;padding:30px 25px;}
+.carNav-list{color:#fff;cursor:pointer;}
+.carNav-list .plus{background-image:url('img/carNar/plus.png');}
+.carNav-list .minus{background-image:url('img/carNar/minus.png');}
+.carNav-list ul{padding:0px 10px 0 30px;}
+.carNav-list ul li{display:block;}
+.carNav-list ul li input{opacity:0;}
+.carNav-list ul li label{line-height:30px;margin:0;background-repeat:no-repeat;background-position:left center;padding-left:8px;background-size:10px;}
+.carNar-list-check{background-image:url('img/carNar/check.png');}
+.carNar-list-checked{background-image:url('img/carNar/checked.png');}
+.carNav-list-title{color:#fff;height:30px;line-height:30px;background-repeat:no-repeat;background-position:left center;padding-left:28px;}
+</style>
+<div id="container" tabindex="0"></div>
+
+<div class="carNav"></div>
+<div class="testBlock" style="width:624px;height:500px;background:#fff;position:fixed;top:100px;right:10px;z-index:99999999"><textarea name="" id="" cols="30" rows="10" style="width:100%;height:100%;padding:20px;"></textarea><button id="testRemove">删除</button><button id="testTxt">0</button></div>
+<script type="text/javascript">
+var selected = "";//是否有选中的
+
+//fn-showList  第一层列表
+function fn_list(items){
+	if(!items || items.length === 0)return false;
+
+	var html = '';
+	items.forEach(function(el,index){
+		html += `
+			<div class="carNav-list plus">
+				<div class="carNav-list-title plus" d-sign="close" d-id="`+el.id+`">辽宁省友邦网络科技有限公司</div>
+				<ul></ul>
+			</div>
+		`;
+	});
+	$(".carNav").html(html);
+}
+
+//fn_getCars  第二层列表
+function fn_getCars(items,_this){
+	var html = '';
+	if(!items || items.length === 0){
+		html = '<li><a><span class="title">没有车辆</span></a></li>';
+		_this.next("ul").html(html);
+		return false;
+	}
+	
+	var html = '';
+	items.forEach(function(el,index){
+		html += `
+			<li>
+				<label for="`+el.id+`" class="carNar-list-check"><input type="checkbox" class="carNar-check" id="`+el.id+`" value="`+el.id+`" /><span>`+el.name+`（`+el.status+`）</span></label>
+			</li>
+		`;
+	});
+
+	_this.html(html);
+}
+
+//ajax-获取特定总公司下所有分公司
+function ajax_get_enterprise_companys(extra_id){
+	$.ajax({
+		url:ajax_106+'/get_enterprise_companys',
+		type:'post',
+		dataType:'json',
+		data:{extra_id:extra_id},
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_list(data.data);//fn-展示列表
+		}
+	});
+}
+
+//ajax-getCars-company  获取分公司信息
+function ajax_get_company_vehicles(companyId,_this){
+	$.ajax({
+		url:ajax_106+'/get_company_vehicles',
+		type:'post',
+		dataType:'json',
+		data:{extra_id:companyId},
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_getCars(data.data,_this);
+		}
+	});
+}
+
+//ajax-getCars-region  获取地区信息（省、市）
+function ajax_get_region_vehicles(extra_id){
+	$.ajax({
+		url:ajax_106+'/get_region_vehicle',
+		type:'post',
+		dataType:'json',
+		data:{extra_id:extra_id},
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_getCars(data.data,$("#company li a"));
+		}
+	});
+}
+
+//ajax-getCars-newInfo   获取定位信息
+function ajax_get_vehicle_realtime_info(vehicle_id){
+	var info = '';
+	$.ajax({
+		url:ajax_106+'/get_vehicle_realtime_info',
+		type:'post',
+		dataType:'json',
+		async:false,
+		data:{vehicle_id:vehicle_id},
+	}).then(function(data){
+		if(data.code === "0000"){
+			info = data.data;
+		}
+	});
+	return info;
+}
+
+//ajax-获得所有车辆定位
+function ajax_get_locations(){
+	$.ajax({
+		url:ajax_106+'/get_locations',
+		type:'post',
+		dataType:'json',
+		data:{
+			role_id:info_login.data.roleid,
+			extra_id:info_login.data.extraid,
+		},
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_loadingCars(data.data);//加载所有车辆定位
+		}
+	});
+}
+
+//获取特定公司的车辆列表
+function ajax_get_vehicles(data){
+	$.ajax({
+		url:ajax_106+'/get_vehicles',
+		type:'post',
+		dataType:'json',
+		async:false,
+		data:{role_id:data.role_id,extra_id:data.extra_id},
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_handle(data.data);
+		}
+	});
+
+	function fn_handle(items){
+		fn_list([{id:info_login.data.extraid,name:info_login.data.extraname}],"only one");
+		fn_getCars(items,$("#company li a"));
+	}
+}
+
+$(function(){
+	//判断角色
+	switch(parseInt(info_login.data.roleid/100)){
+		case 5://超级用户
+			ajax_get_enterprise_companys(info_login.data.extraid);//ajax-获取特定总公司下所有分公司
+			break;
+		case 3://总公司
+			ajax_get_enterprise_companys(info_login.data.extraid);//ajax-获取特定总公司下所有分公司
+			break;
+		default:
+			var postData = {
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			};
+			ajax_get_vehicles(postData);
+	}
+
+	//点击复选框
+	$(document).off("click",".carNar-check").on("click",".carNar-check",function(){
+		$(".carNav-list ul li").find("label").attr("class","carNar-list-check");
+		$(this).parent().attr("class","carNar-list-checked");
+
+		clearTimer();//清除定时器
+		var vehicle_id = JSON.parse($(this).attr("id"));
+		fn_infoWindow(vehicle_id);//加载信息载体窗口
+		selected = vehicle_id;//是否有选中的
+	});
+
+	//点击是否打开
+	$(document).off("click",".carNav-list-title").on("click",".carNav-list-title",function(){
+		var sign = $(this).attr("d-sign");
+		if(sign === "open"){
+			$(this).attr("d-sign","close");
+			$(this).siblings("ul").hide();
+			$(this).removeClass("minus").addClass("plus");
+		}else{
+			$(this).attr("d-sign","open");
+			$(this).siblings("ul").show();
+			$(this).removeClass("plus").addClass("minus");
+			var id = $(this).attr("d-id");
+			ajax_get_company_vehicles(id,$(this).siblings("ul"));
+		}
+	});
+});
+
+//创建地图
+var map = new AMap.Map('container', {
+    resizeEnable: true,
+    zoom:11,
+    mapStyle:'amap://styles/b04f07844c76ca4246706310fe3caba3'
+});
+
+var jsona = [];
+map.on("click",function(n){console.log(n.lnglat)
+	let lng = n.lnglat.lng;
+    let lat = n.lnglat.lat;
+    let type = "0";
+    if(parseInt(jsona.length/4)===jsona.length/4)type = "1";
+    jsona.push({
+        "position":[lng,lat],
+        "type":type
+    });
+    $("#testTxt").html(jsona.length);
+
+    $(".testBlock textarea").html(JSON.stringify(jsona));
+});
+$("#testRemove").click(function(){
+	jsona.splice(jsona.length-1,1);
+	$("#testTxt").html(jsona.length);
+	$(".testBlock textarea").html(JSON.stringify(jsona));
+
+});
+
+if(window.sessionStorage.infoIndexCity){
+	map.setCity(window.sessionStorage.infoIndexCity);
+	clear_storage(["infoIndexCity"]);// 删除本地存储
+}else if(info_login.data.provincecode){
+	map.setCity(info_login.data.provincecode);
+}
+
+AMap.plugin(['AMap.ToolBar','AMap.Scale','AMap.OverView'],function(){
+    //map.addControl(new AMap.ToolBar());
+    map.addControl(new AMap.Scale());
+    // map.addControl(new AMap.OverView({isOpen:true}));
+});
+
+//加载所有车辆定位
+function fn_loadingCars(postions){
+	if(postions && postions.length>0){
+		map.clearMap();//移除覆盖物
+		postions.forEach(function(el,index){
+			if(el.lnglatXY && el.lnglatXY.length>0){
+				var info = {
+					id:el.id,
+					lnglatXY:el.lnglatXY,
+					license:el.license,
+				};
+				//是否有选中的
+				if(selected == el.id)info.infoWindow="open";
+				fn_marker(info);//show-marker
+			}
+		});
+	}
+}
+
+if(window.sessionStorage.info_carLocation){
+	clearTimer();//清除定时器
+	var info_carLocation = JSON.parse(window.sessionStorage.info_carLocation);
+	setTimeout(function(){
+		fn_infoWindow(info_carLocation.vehicle_id);
+		selected = info_carLocation.vehicle_id;//是否有选中的
+	},500);
+	
+}
+ajax_get_locations();
+timer[0] = setInterval(ajax_get_locations,3000);
+
+//加载标注
+function fn_marker(config){
+	new AMap.Marker({
+		position: config.lnglatXY,
+		label:{
+			content: '<div class="simpleMarker zoom"><div class="simpleMarker-title">'+config.license+'</div></div>',
+		    offset: new AMap.Pixel(27, 25)
+		},
+		title: config.license,
+		map: map
+	}).on("click",function(e){
+		clearTimer();//清除定时器
+		fn_infoWindow(config.id);//加载信息载体窗口
+	});
+
+	if(config.infoWindow === "open"){
+		fn_infoWindow(config.id);//加载信息载体窗口
+	}
+}
+
+//加载信息载体窗口
+function fn_infoWindow(id){
+	var config = ajax_get_vehicle_realtime_info(id);//ajax-getCars-newInfo
+	map.setCenter(config.lnglatXY);//set view center
+	var data = {
+		vehicle_id:id,
+		name:config.license,
+	};
+	var html = `
+		<div class="infoWindow">
+			<div class="infoWindow-title zoom">
+				<div class="infoWindow-title-txt">订单号：`+config.order+`</div>
+				<div class="infoWindow-title-close ibtn-close">✖</div>
+			</div>
+			<div class="infoWindow-content">
+				<div class="infoWindow-box">位置：`+config.location+`</div>
+				<div class="infoWindow-box">车速：`+config.speed+` km/h</div>
+				<div class="infoWindow-box">车辆状态：`+config.status+`</div>
+				<div class="infoWindow-box zoom">
+					<button class="btn btn-orange btnInfo" d-data=\'`+JSON.stringify(data)+`\''>轨迹查询</button>
+					<button class="btn btn-orange btnInfo" d-data=\'`+JSON.stringify(data)+`\''>驾驶分析</button>
+					<button class="btn btn-orange btnInfo" d-data=\'`+JSON.stringify(data)+`\''>视频监控</button>
+				</div>
+			</div>
+		</div>
+	`;
+	//信息载体窗口
+	var infoWindow = new AMap.InfoWindow({
+	    isCustom: true,  //使用自定义窗体
+	    content: html,
+	    offset: new AMap.Pixel(0,-70)//定位
+	});
+	infoWindow.open(map, config.lnglatXY);//加载信息载体窗口
+}
+
+//event-点击关闭信息载体窗口
+$(document).on("click",".ibtn-close",function(){
+	map.clearInfoWindow();
+	selected = "";
+	clearTimer();//清除定时器
+	timer[0] = setInterval(fn_loadingCars,3000);
+});
+
+//点击按钮
+$(document).off("click",".btnInfo").on("click",".btnInfo",function(){
+	var str = $(this).html();
+	var data = $(this).attr("d-data");
+	if(str === "轨迹查询"){
+		ajax_nav('trajectory');
+	}else if(str === "驾驶分析"){
+		ajax_nav('data-single');
+	}else if(str === "视频监控"){
+		ajax_nav('realtime-monitor');
+	}
+
+	window.sessionStorage.info_dataSingle = data;
+});
+
+fn_size_window();//窗体大小
+</script>

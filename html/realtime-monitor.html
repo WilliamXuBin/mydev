@@ -1,0 +1,1101 @@
+<link rel="stylesheet" href="neplayer/neplayer.min.css">
+<link rel="stylesheet" href="mediaelement/mediaelementplayer.css" />
+<style>
+	.analysis{margin-bottom:0;}
+	.realt{}
+	.realt-box{width:100%;overflow:hidden;float:left;margin-right:20px;margin-bottom:20px;}
+	.realt-box:nth-child(2n){margin-right:0;}
+	.realt-box-head{color:#fff;height:40px;line-height:40px;padding:0 10px;text-align:left;position:relative;}
+	.realt-box-head:after{position:absolute;top:12px;left:0px;content:"\20";width:4px;height:16px;background:#ff9e13;border-radius:3px;}
+	.realt-box-body{position:relative;height:calc(100% - 40px);overflow:hidden;height:342px;}
+	.realt-box-alert{position:absolute;top:0px;left:0px;width:50%;height:150px;background:#fff;display:none;}
+	.realt-box-alert img{width:100%;height:100%;}
+	.video-js{width:100%;height:100%;}
+	.realt-box-btn{position:absolute;top:10px;right:10px;background:#fff;padding:5px 0px;}
+	.realt-box-btn button{border-right:1px dashed #ccc;padding:0 10px 0 30px;background-repeat:no-repeat;background-position:left 10px center;background-size:14px;cursor:pointer;background-color:#fff;border:none;}
+	.realt-box-btn button:last-child{border-right:none;}
+	.realt-box-turn{background-image:url('img/realTime/turn.png');}
+	.realt-box-fullscreen{background-image:url('img/realTime/fullscreen.png');}
+	.realt-box-close{background-image:url('img/realTime/close.png');}
+	.realt-box-none{background-color:#000;position:absolute;top:0px;left:0px;width:calc(100% + 1px);height:100%;z-index:2;}
+	.realt-box-main{width:100%;height:100%;}
+	.realt-none-error{width:100%;text-align:center;background-image:url('img/realTime/error.png');background-repeat:no-repeat;background-position:center 0px;color:#333;font-size:16px;display:none;padding:80px 0 0 0;margin-top:100px;}
+	.realt-none-loading{display:none;height:100%;text-align:center;}
+	.realt-none-loading span{background:url("img/realTime/loading.gif") no-repeat;background-position:center top;display:inline-block;padding-top:80px;height:30px;line-height:30px;font-weight:bold;color:#333;}
+	.realt-none-flash{width:100%;text-align:center;background-image:url('img/icon/flash.png');background-repeat:no-repeat;background-size:70px;background-position:center 0px;color:#fff;font-size:16px;display:none;padding:80px 0 0 0;margin-top:110px;display:block;cursor:pointer;}
+
+	.realt-box .spinner{margin-top:20%;}
+	.realt-box .spinner > div{background-color:#669999;}
+
+	.realt-box-view{width:160px;height:90px;background:#000;position:absolute;top:0px;right:0px;z-index:1;}
+	.realt-box-viewClick{width:160px;height:90px;position:absolute;top:0px;right:0px;z-index:2;}
+	.realt-box-license{position:absolute;top:0px;left:0px;color:#fff;width:100%;padding:15px;background: linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0));text-shadow: 1.414px 1.414px 3px rgba(0, 0, 0, 0.9);}
+	.realt-box-info{position:absolute;bottom:30px;left:0px;width:100%;padding:15px 0 0px 15px;}
+	.realt-box-info span{color:#fff;display:block;margin-bottom:5px;text-shadow: 1.414px 1.414px 3px rgba(0, 0, 0, 0.9);}
+	.realt-left{width:50%;float:left;}
+	.realt-right{width:calc(50% - 20px);float:right;padding-top:40px;}
+	.realt-right iframe{width:100%;height:342px;margin-bottom:58px;background:#000;}
+
+	.menu-lItem{margin-left:35px;display:none;}
+	.menu-lItem-default{color:#fff;margin-bottom:5px;}
+	.menu-lItem-default .disabled{background:#ccc;color:#000;}
+	.menu-lItem-change{height:26px;}
+	.menu-lItem-change span{color:rgba(255,255,255,0.5);line-height:26px;}
+	.menu-lItem-change button{background:rgba(60,190,224,0.85);color:#fff;border:none;border-radius:3px;height:20px;padding:0 15px;font-size:12px;margin-left:10px;}
+</style>
+<div class="analysis zoom">
+	<div class="analysisLeft zoom">
+		<div class="realt-left">
+			<div class="realt zoom">
+				<div class="realt-box">
+					<div class="realt-box-head">
+						监控车辆-1
+					</div>
+					<div class="realt-box-body">
+						<div class="realt-box-main"></div>
+
+						<div class="realt-box-alert">
+							<img src="/img/realTime/img.png" alt="">
+						</div>
+
+						<div class="realt-box-view"></div>
+						<div class="realt-box-viewClick"></div>
+						<div class="realt-box-license"></div>
+						<div class="realt-box-info"></div>
+						<div class="realt-box-test"></div>
+					</div>
+				</div>
+				<div class="realt-box">
+					<div class="realt-box-head">
+						监控车辆-2
+					</div>
+					<div class="realt-box-body">
+						<div class="realt-box-main"></div>
+
+						<div class="realt-box-alert">
+							<img src="/img/realTime/img.png" alt="">
+						</div>
+
+						<div class="realt-box-view"></div>
+						<div class="realt-box-viewClick"></div>
+						<div class="realt-box-license"></div>
+						<div class="realt-box-info"></div>
+						<div class="realt-box-test"></div>
+					</div>
+				</div>
+				<div class="realt-box">
+					<div class="realt-box-head">
+						监控车辆-3
+					</div>
+					<div class="realt-box-body">
+						<div class="realt-box-main"></div>
+
+						<div class="realt-box-alert">
+							<img src="/img/realTime/img.png" alt="">
+						</div>
+
+						<div class="realt-box-view"></div>
+						<div class="realt-box-viewClick"></div>
+						<div class="realt-box-license"></div>
+						<div class="realt-box-info"></div>
+						<div class="realt-box-test"></div>
+					</div>
+				</div>
+				<div class="realt-box">
+					<div class="realt-box-head">
+						监控车辆-4
+					</div>
+					<div class="realt-box-body">
+						<div class="realt-box-main"></div>
+
+						<div class="realt-box-alert">
+							<img src="/img/realTime/img.png" />
+						</div>
+						
+						<div class="realt-box-view"></div>
+						<div class="realt-box-viewClick"></div>
+						<div class="realt-box-license"></div>
+						<div class="realt-box-info"></div>
+						<div class="realt-box-test"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="realt-right">
+			<iframe src="http://183.62.139.75:8080/808gps/open/player/video.html?lang=zh&devIdno=001705104956&account=ptcs&password=000000&channel=9" frameborder="0"></iframe>
+			<iframe src="" frameborder="0"></iframe>
+			<iframe src="" frameborder="0"></iframe>
+			<iframe src="" frameborder="0"></iframe>
+		</div>
+	</div>
+	<div class="analysisRight">
+		<div class="realTimeMenu"></div>
+	</div>
+</div>
+<script src="neplayer/neplayer.min.js"></script>
+<script src="/mediaelement/mediaelement-and-player.js"></script>
+<script type="text/javascript">
+function flashChecker() {  
+	var hasFlash = 0;　　　　 //是否安装了flash    
+	var flashVersion = 0;　　 //flash版本    
+
+	if(document.all) {
+		var swf = new ActiveXObject('ShockwaveFlash.ShockwaveFlash');  
+		if(swf) {
+			hasFlash = 1;  
+			VSwf = swf.GetVariable("$version");  
+			flashVersion = parseInt(VSwf.split(" ")[1].split(",")[0]);  
+		}
+	} else {  
+		if(navigator.plugins && navigator.plugins.length > 0) {  
+			var swf = navigator.plugins["Shockwave Flash"];  
+			if(swf) {  
+				hasFlash = 1;  
+				var words = swf.description.split(" ");  
+				for(var i = 0; i < words.length; ++i) {  
+				if(isNaN(parseInt(words[i]))) continue;  
+					flashVersion = parseInt(words[i]);  
+				}  
+			}  
+		}  
+	}  
+	return { f: hasFlash, v: flashVersion };  
+}
+
+var menu_selected;//菜单
+var arr = ["","","",""];//复选框数组
+var arr_isOnline = [false,false,false,false];//复选框数组_是否在线
+var mtop_none_error = 0;//错误提示的上边距
+
+var myVideo_srcs = [];
+
+var fls = flashChecker();  
+var s = "";
+if(!fls.f) {  
+	fn_none({elem:$(".realt-box-body").eq(0),isShow:"flash"});//视频遮罩
+	fn_none({elem:$(".realt-box-body").eq(1),isShow:"flash"});//视频遮罩
+	fn_none({elem:$(".realt-box-body").eq(2),isShow:"flash"});//视频遮罩
+	fn_none({elem:$(".realt-box-body").eq(3),isShow:"flash"});//视频遮罩 
+}else{
+	fn_none({elem:$(".realt-box-body").eq(0),isShow:"error"});//视频遮罩
+	fn_none({elem:$(".realt-box-body").eq(1),isShow:"error"});//视频遮罩
+	fn_none({elem:$(".realt-box-body").eq(2),isShow:"error"});//视频遮罩
+	fn_none({elem:$(".realt-box-body").eq(3),isShow:"error"});//视频遮罩
+}
+
+var singNum = [20,20,20,20];
+
+var arr_title = [
+	[
+		{name:"司机视频",type:"（主屏幕）"},
+		{name:"路况视频",type:"（副屏幕）"},
+		{name:"第三路视频",type:""},
+	],
+	[
+		{name:"司机视频",type:"（主屏幕）"},
+		{name:"路况视频",type:"（副屏幕）"},
+		{name:"第三路视频",type:""},
+	],
+	[
+		{name:"司机视频",type:"（主屏幕）"},
+		{name:"路况视频",type:"（副屏幕）"},
+		{name:"第三路视频",type:""},
+	],
+	[
+		{name:"司机视频",type:"（主屏幕）"},
+		{name:"路况视频",type:"（副屏幕）"},
+		{name:"第三路视频",type:""},
+	],
+];
+
+var arr_status = [
+	[
+		{name:"司机视频",val:false},
+		{name:"路况视频",val:false},
+		{name:"第三路视频",val:false},
+	],
+	[
+		{name:"司机视频",val:false},
+		{name:"路况视频",val:false},
+		{name:"第三路视频",val:false},
+	],
+	[
+		{name:"司机视频",val:false},
+		{name:"路况视频",val:false},
+		{name:"第三路视频",val:false},
+	],
+	[
+		{name:"司机视频",val:false},
+		{name:"路况视频",val:false},
+		{name:"第三路视频",val:false},
+	],
+];
+
+var arr_num = [10,10,10,10];
+
+//视频遮罩
+//    elem:elem,//选择器
+//    isShow:false,//是否选择
+//    txt:"",//显示文案
+function fn_none(config){
+	var _config = {
+		elem:null,
+		isShow:false,
+		txt:"友邦安达",
+	};
+
+	if(!config || typeof config === "undefined"){
+		config = _config;
+	}
+
+	for(var k in _config){
+		if(!config.hasOwnProperty(k)){
+			config[k] = _config[k];
+		}
+	}
+
+	var html = '<div class="realt-box-none"><div class="realt-none realt-none-loading"><span>视频加载中…</span></div><div class="realt-none realt-none-error"></div><a href="//www.adobe.com/go/getflashplayer" target="_blank" class="realt-none realt-none-flash">点击打开flash</a></div>';
+
+	var elem = config.elem;
+	if(config.isShow){
+		elem.find(".realt-box-none").remove();
+		elem.append(html);
+		var _height = $(window).height()-210;
+		$(".realt-none-loading").find("span").css("margin-top",_height/4-100);
+
+		elem.find(".realt-none").hide();
+		if(config.isShow === "loading"){
+			elem.find(".realt-none-loading").show();
+			return;
+		}
+
+		if(config.isShow === "flash"){
+			elem.find(".realt-none-flash").show();
+			return;
+		}
+
+		if(config.isShow === "error"){
+			elem.find(".realt-none-error").show();
+			elem.find(".realt-none-error").html(config.txt);
+			return;
+		}
+
+		if(config.isShow === "restart"){
+			elem.find(".realt-none-error").show();
+			elem.find(".realt-none-error").html("网络异常，请重新开启视频");
+		}
+	}else{
+		elem.find(".realt-box-none").remove();
+	}
+}
+
+//视频控制-加载 
+function fn_video_in(n,id){	
+
+	var view = "rtmp://106.14.145.25/live/vehicle"+id+"_1",
+		viewSmall = "rtmp://106.14.145.25/live/vehicle"+id+"_2";
+
+	myVideo_srcs[n] = {
+		view:view,
+		viewSmall:viewSmall,
+	};
+
+	if(window_explorer === "Edge" || window_explorer === "Safari"){
+		fn_vidwo_neplayer(n);
+	}else{
+		//fn_vidwo_neplayer(n);
+		fn_video_mediaelement(n,id);
+	}	
+}
+
+function fn_vidwo_neplayer(n){
+	fn_none({elem:$(".realt-box-body").eq(n)});//视频遮罩
+
+	if(myVideo[n] && myVideo_small[n]){
+		myVideo[n].release();
+		myVideo_small[n].release();
+	}
+
+	var html = '<video id="my-video'+n+'" class="video-js" x-webkit-airplay="allow" autoplay="autoplay" webkit-playsinline controls preload="auto" width="640" height="360" data-setup="{}"><source src="'+myVideo_srcs[n].view+'" type="rtmp/flv"></video>';
+	$(".realt-box-main").eq(n).html(html);//初始化视频
+	myVideo[n] = neplayer("my-video"+n, {}, function(){
+	    // 当播放器初始化完成时运行的回调函数
+	});
+
+	var html_small = '<video id="my-videoSmall'+n+'" class="video-js" width="160" height="90" x-webkit-airplay="allow" autoplay="autoplay" webkit-playsinline controls preload="auto" width="640" height="360" data-setup="{}"><source src="'+myVideo_srcs[n].viewSmall+'" type="rtmp/flv"></video>';
+	$(".realt-box-view").eq(n).html(html_small);//初始化视频
+	myVideo_small[n] = neplayer("my-videoSmall"+n, {}, function(){
+	    // 当播放器初始化完成时运行的回调函数
+	});
+
+	myVideo[n].on("waiting",function(){
+		console.log("waiting")
+	});
+
+	myVideo[n].on("pause",function(){
+		console.log("pause")
+		myVideo_small[n].pause();
+	});
+
+	myVideo[n].on("playing",function(){
+		console.log("playing")
+		myVideo_small[n].play();
+	});
+
+	myVideo[n].on("error",function(){
+		console.log("error");
+		fn_none({elem:$(".realt-box-body").eq(n),isShow:"restart"});//视频遮罩
+	});	
+}
+
+function fn_video_mediaelement(n,id){
+	fn_none({elem:$(".realt-box-body").eq(n),isShow:"loading"});//视频遮罩
+
+	var html = '<video id="my-video'+n+'"><source type="application/x-mpegURL" src=""></video>';
+	$(".realt-box-main").eq(n).html(html);//初始化视频
+
+	var html_small = '<video id="my-videoSmall'+n+'" controls width="160" height="90"><source type="application/x-mpegURL" src=""></video>';
+	$(".realt-box-view").eq(n).html(html_small);//初始化视频
+
+	var width1 = $(".realt-box").width();
+	var height1 = $(".realt-box").height()-40;
+	$("#my-video"+n).attr("width",width1);
+	$("#my-video"+n).attr("height",height1);
+
+	var url = 'rtmp://106.14.145.25/live/vehicle'+id;
+	$("#my-video"+n).find("source").attr("src",url+'_1');//重置地址
+	$("#my-videoSmall"+n).find("source").attr("src",url+'_2');//重置地址
+
+	$("#my-video"+n).mediaelementplayer({
+	    pauseOtherPlayers:false,//多视频同时播放
+	    clickToPlayPause:false,
+	    success: function (media, ele, player) {
+	    	player.pause();
+	    	player.play();
+	    	fn_none({elem:$(".realt-box-body").eq(n)});//视频遮罩
+        }
+    });
+
+    $("#my-videoSmall"+n).mediaelementplayer({
+	    pauseOtherPlayers:false,//多视频同时播放
+	    clickToPlayPause:false,
+	    success: function (media, ele, player) {
+	    	player.pause();
+	    	player.play();
+	    	$(".realt-box-view").find(".mejs-controls").hide();
+        }
+    });
+}
+
+//视频控制-卸载
+function fn_video_out(n){
+	fn_none({elem:$(".realt-box-body").eq(n),isShow:"error"});//视频遮罩
+	$(".realt-box-main").eq(n).html("");//初始化视频
+	$(".realt-box-view").eq(n).html("");//初始化视频
+	$(".realt-box-head").eq(n).html("监控车辆-"+(n+1));
+}
+
+//车辆监控-开始摄像头视频流推流
+function ajax_in(id,n,license){	
+	$.ajax({
+		url:'https://bms.youbanganda.com/push_vehicle_code',
+		type:'post',
+		dataType:'json',
+		data:{
+			vehicle_id:id,
+			code:"1001",
+		},
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_video_in(n,id);//视频控制-加载
+			ajax_timer();//心跳接口
+			toastr.info('开始监控-'+license);//提示框
+
+			arr_isOnline[n]=true;
+
+			clearTimer();
+			timer[0] = setInterval(ajax_timer,30000);
+			singNum[n]=20;
+			timer[1]=setInterval(function(){
+				var ids = arr.slice(0);
+				ids = "["+ids.notempty().join(",")+"]";
+				ajax_get_playing_vehicle_info({ids:ids});
+			},1000);
+			
+		}else if(data.code === "9003"){
+			fn_none({elem:$(".realt-box-body").eq(n),isShow:"error"});//视频遮罩
+			$(".realt-box-position").eq(n).hide();
+			$(".realt-box-head").eq(n).html("监控车辆-"+(n+1));
+
+			ajax_out(id);//车辆监控-停止摄像头视频流推流
+
+			var _menu_check = $(".menu-check");
+			for(var i=0;i<_menu_check.length;i++){
+				var _id = _menu_check.eq(i).val();
+				if(_id == id){
+					_menu_check.eq(i).prop("checked",false);
+					_menu_check.eq(i).parent().attr("class","check");
+					_menu_check.eq(i).siblings(".arrow").removeClass("arrow_up").addClass("arrow_down");
+					_menu_check.eq(i).parent().siblings(".menu-lItem").hide();
+					fn_arr_out(_id);//复制框操作-移除
+					return;
+				}
+			}			
+		}
+	});
+}
+
+//车辆监控-停止摄像头视频流推流
+function ajax_out(id){
+	var sign = true;
+	for(var i=0;i<4;i++){
+		if(arr[i] && arr_isOnline[i]){
+			sign = false;
+		}
+	}
+
+	if(sign){
+		clearTimer();
+	}
+}
+
+//车辆监控-三路视频切流
+function ajax_change(id,n,code){
+	$.ajax({
+		url:'https://bms.youbanganda.com/push_vehicle_code',
+		type:'post',
+		dataType:'json',
+		data:{
+			vehicle_id:id,
+			code:code,
+		},
+	}).then(function(data){
+		if(data.code === "0000"){
+			arr_num[n]=10;
+			setTimeout(function(){
+				timer[2]=setInterval(function(){
+					var ids = arr.slice(0);
+					ids = "["+ids.notempty().join(",")+"]";
+					ajax_get_playing_vehicle_status_switch({ids:ids},n);
+				},1000);
+			},3000);
+		}else{
+			toastr.error(data.message)
+		}
+	});
+}
+
+//心跳接口
+function ajax_timer(){
+	var abc = [];
+	arr.forEach(function(el,index){
+		if(el != ""){
+			abc.push(el);
+		}
+	});
+	var ids = "[]";
+	if(abc.length>0){
+		ids = "["+abc.join(",")+"]"
+	}
+	$.ajax({
+		url:ajax_106+'/web_heartbeat',
+		type:'post',
+		dataType:'json',
+		data:{
+			ids:ids,
+		}
+	});
+}
+
+//获取车辆列表
+function ajax_get_vehicles(){
+	$.ajax({
+		url:ajax_106+'/get_vehicles',
+		type:'post',
+		dataType:"json",
+		data:{
+			role_id:info_login.data.roleid,
+			extra_id:info_login.data.extraid,
+		},
+		async:false,
+	}).then(function(data){
+		if(data.code === "0000"){
+			fn_get_vehicles(data.data);
+		}
+	});
+}
+
+//fn-获取车辆
+function fn_get_vehicles(items){
+	var arr_items = [];
+	items.forEach(function(el,index){
+		arr_items.push({id:el.id,name:el.name,status:el.status,three_camera:el.three_camera});
+	});
+
+	if(window.sessionStorage.info_dataSingle){
+		var info_car = JSON.parse(window.sessionStorage.info_dataSingle);
+		clear_storage(["info_dataSingle"]);// 删除本地存储
+
+		menu_selected = new fn_realTiem_menu({
+			elem:$(".realTimeMenu"),
+			title:"视频监控",
+			items:arr_items
+		});
+
+		var id = info_car.vehicle_id;
+		arr[0]=id;
+		ajax_in(id,0,info_car.name);//车辆监控-开始摄像头视频流推流
+
+
+		$(".realt-box-head").eq(0).html(info_car.name);
+		$(".realt-box-btn").eq(0).attr("d-id",id);//给视频操作按钮加ID
+
+		var _menu_check = $(".menu-check");
+		for(var i=0;i<_menu_check.length;i++){
+			var _id = _menu_check.eq(i).val();
+			if(_id == id){
+				_menu_check.eq(i).prop("checked",true);
+				_menu_check.eq(i).parent().attr("class","checked");
+				return;
+			}
+		}
+	}else{
+		menu_selected = new fn_realTiem_menu({
+			elem:$(".realTimeMenu"),
+			title:"视频监控",
+			items:arr_items
+		});
+	}
+}
+
+function fn_realTiem_menu(config){
+	var _config = {
+		elem:null,
+		title:"",
+		items:[
+			{
+				name:"",
+				id:"",
+				isShow:false,
+			}
+		]
+	}
+
+	if(!config && typeof config !== "object"){
+		config = _config;
+	}
+
+	for(var k in _config){
+		if(!config.hasOwnProperty(k)){
+			config[k] = _config[k];
+		}
+	}
+
+	var html_lItem = `
+		<div class="menu-lItem-default" d-name="司机视频">司机视频（主屏幕）</div>
+		<div class="menu-lItem-default" d-name="路况视频">路况视频（副屏幕）</div>
+		<div class="menu-lItem-default menu-lItem-change" d-name="第三路视频"><span>第三路视频</span><button>切换屏幕</button></div>
+	`;
+	var html_items = "";
+	config.items.forEach(function(el,index){
+		var arrow = el.isShow?"arrow_up":"arrow_down";
+		var threeItme_title = el.three_camera?'<div class="arrow '+arrow+'"></div>':"";
+		var threeItme = el.three_camera?'<div class="menu-lItem">'+html_lItem+'</div>':"";
+		html_items += `
+			<li>
+	          	<label for="`+el.id+`" class="check">
+		            <input type="checkbox" class="menu-check" id="`+el.id+`" value="`+el.id+`">
+		            <span>`+el.name+` (`+el.status+`)</span>
+		            `+threeItme_title+`
+	        	</label>
+	        	`+threeItme+`
+	        </li>
+		`;
+	});
+
+	var html = `
+		<div class="menu">
+			<div class="menu-title menu-height" id="menu_title">视频监控</div>
+			<div class="menu-content">
+				<div class="menu-search menu-height zoom" id="menu_search" style="display: block;">
+					<input type="text" placeholder="输入关健字" id="menu_search_text">
+					<button type="button" id="menu_search_btn">搜索</button>
+				</div>
+				<div class="menu-list" id="menu_list" style="max-height: 390px;">
+				    <ul>
+				        `+html_items+`
+				    </ul>
+				</div>
+				<div class="menu-btn menu-height">
+					<button class="cbtn" id="menu_btn">确定</button>
+				</div>
+			</div>
+		</div>
+	`;
+
+	config.elem.html(html);
+	$(document).off("click",".menu-check").on("click",".menu-check",function(){
+		var id = $(this).val();
+		for(var i=0;i<4;i++){
+			if(arr[i] == id){
+				arr_title[i] = [
+					{name:"司机视频",type:"（主屏幕）"},
+					{name:"路况视频",type:"（副屏幕）"},
+					{name:"第三路视频",type:""},
+				];
+				arr_status[i] = [
+					{name:"司机视频",val:false},
+					{name:"路况视频",val:false},
+					{name:"第三路视频",val:false},
+				];
+				break;
+			}
+		}
+		if($(this).is(":checked")){
+			$(this).siblings(".arrow").removeClass("arrow_down").addClass("arrow_up");
+			$(this).parent().attr("class","checked");
+			$(this).parent().siblings(".menu-lItem").show();
+			$(this).parent().siblings(".menu-lItem").html(html_lItem);
+			
+		}else{;
+			$(this).siblings(".arrow").removeClass("arrow_up").addClass("arrow_down");
+			$(this).parent().attr("class","check");
+			$(this).parent().siblings(".menu-lItem").hide();
+		}
+	});
+
+	if(info_login.data.id != 26 && info_login.data.id != 12){
+		$("#menu_list").find(".arrow").remove();
+		$("#menu_list").find(".menu-lItem").remove();
+	}
+}
+fn_realTiem_menu.prototype = {
+	selecteds:function(){
+		var arr = [];
+		$(".menu-check").each(function(index,el){
+			if($(".menu-check").eq(index).is(":checked")){
+				var id = $(".menu-check").eq(index).val();
+				arr.push("\""+id+"\"");
+			}
+		});
+		return arr;
+	},
+	selectedsCode:function(){
+		var arr = [];
+		$(".menu-check").each(function(index,el){
+			if($(".menu-check").eq(index).is(":checked")){
+				var code = $(".menu-check").eq(index).attr("d-code");
+				arr.push("\""+code+"\"");
+			}
+		});
+		return arr;
+	},
+	selectedsText:function(){
+		var arr = [];
+		$(".menu-check").each(function(index,el){
+			if($(".menu-check").eq(index).is(":checked")){
+				var txt = $(".menu-check").eq(index).next().text();
+				arr.push("\""+txt+"\"");
+			}
+		});
+		return arr;
+	}
+}
+
+//获取车辆列表实时信息
+function ajax_get_vehicles_info(){
+	$.ajax({
+		url:ajax_106+'/get_vehicles',
+		type:'post',
+		dataType:"json",
+		data:{
+			role_id:info_login.data.roleid,
+			extra_id:info_login.data.extraid,
+		},
+		async:true,
+	}).then(function(data){
+		if(data.code === "0000"){
+			var sign = true;
+			for(var i=0;i<arr.length;i++){
+				if(arr[i] != ""){
+					sign = false;
+				}
+			}
+			if(sign)return;
+
+			for(var i=0;i<arr.length;i++){
+				if(arr[i] != ""){
+					var _menu_check = $(".menu-check");
+					for(var j=0;j<_menu_check.length;j++){
+						_menu_check.eq(j).siblings("span").html(data.data[j].name+"("+data.data[j].status+")");
+					}	
+				}
+			}
+		}
+	});
+}
+
+//复制框操作-移除
+function fn_arr_out(id){
+	for(var i=0;i<4;i++){
+		if(arr[i] == id){
+			arr[i]="";
+			arr_isOnline[i]=false;
+			ajax_out(id,i);//车辆监控-停止摄像头视频流推流
+			fn_video_out(i);//视频控制-卸载
+			$(".realt-box-btn").eq(i).removeAttr("d-id");//给视频操作按钮去除ID
+			return;
+		}
+	}
+}
+
+$(function(){
+	ajax_get_vehicles();//获取车辆列表
+	timer_vehicle = setInterval(ajax_get_vehicles_info,10000);//获取车辆列表实时信息
+
+	//点击操作复选框
+	$(document).on("click",".menu-check",function(){
+		var _id = $(this).attr("id");
+		var _this = $(this);
+		var _license = _this.next().text();
+		
+		if(menu_selected.selecteds().length>4){
+			_this.prop("checked",false);
+			$(this).siblings(".arrow").removeClass("arrow_up").addClass("arrow_down");
+			$(this).parent().siblings(".menu-lItem").hide();
+			$(this).parent().attr("class","check");
+			toastr.error("在线最多只能支持四辆车");
+			return;
+		}
+
+		if($(this).is(":checked")){
+			fn_arr_in(_id);//复制框操作-添加
+			$(".menu-check").attr("disabled","disabled");//禁止选择复选框
+			setTimeout(function(){$(".menu-check").removeAttr("disabled");},3000);//十秒后解开复选框
+		}else{
+			fn_arr_out(_id);//复制框操作-移除
+		}
+
+		//复制框操作-添加
+		function fn_arr_in(id){
+			for(var i=0;i<4;i++){
+				if(!arr[i]){
+					arr[i]=id;
+					ajax_in(id,i,_license);//车辆监控-开始摄像头视频流推流
+					var arr_license = _this.next().html();
+					arr_license = arr_license.substring(0,arr_license.length-4);
+					$(".realt-box-head").eq(i).html(arr_license);
+					$(".realt-box-btn").eq(i).attr("d-id",id);//给视频操作按钮加ID
+					return;
+				}
+			}
+		}
+	});
+
+	//点击切换视频
+	$(document).off("click",".realt-box-viewClick").on("click",".realt-box-viewClick",function(){
+		var n = $(this).parent().parent().index();
+		var view = myVideo_srcs[n].view;
+		var view_before = myVideo_srcs[n].viewSmall;
+
+		fn_none({elem:$(".realt-box-body").eq(n)});//视频遮罩
+
+		myVideo_srcs[n].view = view_before;
+	    myVideo_srcs[n].viewSmall = view;
+
+		if(window_explorer === "Edge" || window_explorer === "Safari"){
+			myVideo[n].release();
+			myVideo_small[n].release();
+			fn_vidwo_neplayer(n);
+		}else{
+			// myVideo[n].release();
+			// myVideo_small[n].release();
+			// fn_vidwo_neplayer(n);
+			fn_change_mediaelement(n);
+		}
+
+	    function fn_change_mediaelement(){
+	    	var view = $("#my-video"+n).find("source").attr("src");
+			var view_before = $("#my-videoSmall"+n).find("source").attr("src");
+			var view_type = view.substring(view.length-1);
+			var view_type_id = view.substring(view.length-6,view.length-2);
+
+			arr_title[n].forEach(function(el,index){
+				if(el.type == "（主屏幕）"){
+					el.type = "（副屏幕）";
+				}else if(el.type == "（副屏幕）"){
+					el.type = "（主屏幕）";
+				}
+			});
+			console.log(arr_title)
+
+			var _menuli = $("#menu_list li");
+			var len = _menuli.length;
+			for(var i=0;i<len;i++){
+				var str = _menuli.eq(i).find("input").val();
+				if(str == view_type_id){
+					var _default = _menuli.eq(i).find("div");
+					_default.each(function(index,el){
+						var name = _default.eq(index).attr("d-name");
+						arr_title[n].forEach(function(el_title,index_title){
+							if(name == arr_title[n][index_title].name){
+								if(_default.eq(index).hasClass("menu-lItem-change")){
+									_default.eq(index).find(".menu-lItem-change span").html(name+arr_title[n][index_title].type);
+								}else{
+									_default.eq(index).html(name+arr_title[n][index_title].type);
+								}
+							}
+						});
+					});
+				}
+			}
+
+			var html = '<video id="my-video'+n+'"><source type="application/x-mpegURL" src=""></video>';
+			$(".realt-box-main").eq(n).html(html);//初始化视频
+
+			var html_small = '<video id="my-videoSmall'+n+'" width="160" height="90"><source type="application/x-mpegURL" src=""></video>';
+			$(".realt-box-view").eq(n).html(html_small);//初始化视频
+
+			var width1 = $(".realt-box").width();
+			var height1 = $(".realt-box").height()-40;
+			$("#my-video"+n).attr("width",width1);
+			$("#my-video"+n).attr("height",height1);
+
+			$("#my-video"+n).find("source").attr("src",view_before);//重置地址
+			$("#my-videoSmall"+n).find("source").attr("src",view);//重置地址
+
+			$("#my-video"+n).mediaelementplayer({
+			    pauseOtherPlayers:false,//多视频同时播放
+		    	clickToPlayPause:false,
+			    success: function (media, ele, player) {
+			    	player.play();
+			    	fn_none({elem:$(".realt-box-body").eq(n)});//视频遮罩
+		        }
+		    });
+
+		    $("#my-videoSmall"+n).mediaelementplayer({
+			    pauseOtherPlayers:false,//多视频同时播放
+		    	clickToPlayPause:false,
+			    success: function (media, ele, player) {
+			    	player.play();
+			    	$(".realt-box-view").find(".mejs-controls").hide();
+			    	mediaElement.addEventListener('pause', function(e) {  
+
+			        },false);
+		        }
+		    });
+	    }
+	});
+
+	//点击切换多路视频
+	$(document).off("click",".menu-lItem-change button").on("click",".menu-lItem-change button",function(){
+		var _this = $(this);
+		var str = $(this).siblings("span").html();
+
+		var parent = $(this).parent().parent();
+		var id = parent.siblings("label").find("input").val();
+
+		var n=0;
+		for(var i=0;i<4;i++){
+			if(arr[i] == id){
+				n=i;
+			}
+		}
+
+		var view_small = "";
+		var _index = 0;
+		arr_title[n].forEach(function(el,index){
+			if(el.name == "司机视频"){
+				view_small = el.name;
+				_index = index;
+			}
+		});
+
+		//parent.find(".menu-lItem-default").removeClass("menu-lItem-change");
+		console.log(str)
+		var code = "9000";
+		if(str === "第三路视频"){
+			arr_status[n][2].val="ing";
+			arr_status[n][_index].val="result";
+			parent.find(".menu-lItem-default").eq(2).html("<span>第三路视频</span><button class='disabled' disabled='disabled'>切换中</button>");
+			code = "9000";
+		}else{
+			arr_status[n][_index].val="ing";
+			arr_status[n][2].val="result";
+			parent.find(".menu-lItem-default").eq(n).html("<span>"+view_small+arr_title[n][0].type+"</span><button class='disabled' disabled='disabled'>切换中</button>");
+			code = "9001";
+		}
+
+		ajax_change(id,n,code);
+		setTimeout(function(){
+			parent.find("button").removeAttr("disabled");
+		},5000);
+	});
+});
+
+//
+function ajax_get_playing_vehicle_info(_data){
+	$.ajax({
+		url:'https://api0.youbanganda.com/get_playing_vehicle_info',
+		type:"post",
+		data:_data,
+		dataType:"json",
+	}).then(function(data){
+		if(data.code === "0000"){
+			data = data.data;
+
+			if(data.length===0){
+				arr.forEach(function(el_arr,index_arr){
+					$(".realt-box").eq(index_arr).find(".realt-box-info").html("");
+				});
+				return;
+			}
+			data.forEach(function(el,index){
+				arr.forEach(function(el_arr,index_arr){
+					if(el.id == el_arr){
+						if(el && el.info && el.info.length===0)return;
+						var html_info = "";
+						el.info.forEach(function(el_info,index_info){
+							html_info += "<span>"+el_info+"</span>";
+						});
+						$(".realt-box").eq(index_arr).find(".realt-box-info").html(html_info);
+					}
+				});
+			});
+		}
+	});
+}
+
+function ajax_get_playing_vehicle_status_switch(set,n){
+	$.ajax({
+		url:ajax_106+"/get_playing_vehicle_status_switch",
+		type:"post",
+		dataType:"json",
+		data:set
+	}).then(function(data){
+		if(data.code){
+			data = data.data;
+
+			if(data.length===0){
+				arr.forEach(function(el_arr,index_arr){
+					$(".realt-box").eq(index_arr).find(".realt-box-info").html("");
+				});
+				return;
+			}
+
+			data.forEach(function(el,index){
+				arr.forEach(function(el_arr,index_arr){
+					if(el.id == el_arr){
+						arr_num[n]--;
+						if(arr_num[n] == 0){
+							toastr.error("网络异常，请重新切换");
+							clearInterval(timer[2]);
+							var t_ing = "";
+							var t_result = "";
+							for(var i=0;i<arr_status[index_arr].length;i++){
+								if(arr_status[index_arr][i].val === "ing"){
+									t_ing = i+1;
+								}else if(arr_status[index_arr][i].val === "result"){
+									t_result = i+1;
+								}
+							}
+
+							if(t_ing && t_result){
+								t_ing--;
+								t_result--;
+
+								$("#menu_list li").each(function(index,el){
+									var mli = $("#menu_list li").eq(index);
+									if(mli.find("input").val() == el_arr){
+										mli.find(".menu-lItem-default").removeClass("menu-lItem-change");
+										mli.find(".menu-lItem-default").eq(t_ing).addClass("menu-lItem-change");
+										mli.find(".menu-lItem-default").eq(t_ing).html("<span>"+arr_title[index_arr][t_ing].name+"</span><button>切换屏幕</button>");
+										mli.find(".menu-lItem-default").eq(t_result).removeClass("menu-menu-lItem-change");
+										mli.find(".menu-lItem-default").eq(t_result).html(arr_title[index_arr][t_result].name+arr_title[index_arr][t_result].type);
+									}
+								});
+								arr_status[index_arr] = [
+									{name:"司机视频",val:false},
+									{name:"路况视频",val:false},
+									{name:"第三路视频",val:false},
+								];
+
+							}						
+							return;
+						}
+
+						if(el.status == 0 ){
+							arr[index_arr]="";
+							fn_none({elem:$(".realt-box-body").eq(index_arr),isShow:"error"});//视频遮罩
+							$(".realt-box-head").eq(index_arr).html("监控车辆-"+(index_arr+1));
+							toastr.error("网络异常，车辆已关闭");
+							$("#menu_list li").each(function(index,el){
+								var mli = $("#menu_list li").eq(index).find("input");
+								if(mli.val() == el_arr){
+									mli.prop("checked",false);
+									mli.siblings(".arrow").removeClass("arrow_up").addClass("arrow_down");
+									mli.parent().siblings(".menu-lItem").hide();
+									mli.parent().attr("class","check");
+								}
+							});
+							return;
+						}	
+
+						if(el.switch == 1){
+							clearInterval(timer[2]);
+							var t_ing = "";
+							var t_result = "";
+							for(var i=0;i<arr_status[index_arr].length;i++){
+								if(arr_status[index_arr][i].val === "ing"){
+									t_ing = i+1;
+								}else if(arr_status[index_arr][i].val === "result"){
+									t_result = i+1;
+								}
+							}
+
+							if(t_ing && t_result){
+								t_ing--;
+								t_result--;
+								var s_ing = arr_title[index_arr][t_ing].type;
+								var s_result = arr_title[index_arr][t_result].type;
+								arr_title[index_arr][t_result].type=s_ing;
+								arr_title[index_arr][t_ing].type=s_result;
+
+								$("#menu_list li").each(function(index,el){
+									var mli = $("#menu_list li").eq(index);
+									if(mli.find("input").val() == el_arr){
+										mli.find(".menu-lItem-default").removeClass("menu-lItem-change");
+										mli.find(".menu-lItem-default").eq(t_result).addClass("menu-lItem-change");
+										mli.find(".menu-lItem-default").eq(t_result).html("<span>"+arr_title[index_arr][t_result].name+"</span><button>切换屏幕</button>");
+										mli.find(".menu-lItem-default").eq(t_ing).removeClass("menu-menu-lItem-change");
+										mli.find(".menu-lItem-default").eq(t_ing).html(arr_title[index_arr][t_ing].name+arr_title[index_arr][t_ing].type);
+									}
+								});
+								arr_status[index_arr] = [
+									{name:"司机视频",val:false},
+									{name:"路况视频",val:false},
+									{name:"第三路视频",val:false},
+								];
+
+							}							
+						}
+					}
+				});
+			});
+		}
+	});
+}
+
+var _height = $(window).height()-210;
+
+if(info_login.data.id != 82){
+	$(".realt-right").remove();
+	$(".realt-left").css("width","100%");
+	$(".realt-box").css("width","calc(50% - 20px)");
+}
+
+
+//$(".realt-box").height(_height/2);
+//mtop_none_error = _height/4-100;
+//$(".realt-none-error").css("margin-top",mtop_none_error);
+</script>

@@ -1,0 +1,444 @@
+<style>
+	#pageDemo{margin-top:10px;text-align:center;}
+	.analysis-main{margin:40px 0;}
+	.analysis-main-left{width:500px;float:left;}
+	.analysis-main-right{width:calc(100% - 520px);float:right;}
+	.moperation-left span{float:left;}
+	.moperation-icon{width:19px;height:32px;background:url("img/icon/detail.png") no-repeat;background-position:left center;float:left;margin-left:10px;cursor:pointer;}
+</style>
+
+<div class="analysis zoom">
+	<div id="sel_result"></div>
+
+	<div class="singleMenu zoom" id="chart"></div>
+	<div class="analysis-loading"></div>
+	<div class="analysis-main zoom">
+		<div class="single-item-title">图表数据</div>
+		<div class="analysis-main-left"></div>
+		<div class="analysis-main-right"></div>
+	</div>
+
+	<div class="moperation zoom">
+		<div class="moperation-left zoom"><span id="moperation_txt" style="display:block;">报表数据</span><div class="moperation-icon"></div></div>
+	</div>
+		
+	<table class="ttable" id="ttable"></table>
+	<div id="pageDemo"></div>
+</div>
+<script type="text/javascript">
+	var json_char = {
+		elem:$("#chart"),
+		items:[
+			{name:"选择车辆",id:"sel_vehicle",type:"select"},
+			{name:"开始时间",id:"menu_start",type:"date"},
+			{name:"结束时间",id:"menu_end",type:"date"},
+			{name:"事件类型",id:"event_type",type:"select"},
+			{name:"发生地点",id:"poi_key"},
+			{name:"确定",id:"btn_chart",type:"btn"},
+		],
+	}
+	new singleMenu(json_char);
+
+	var sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:[{name:"请选择",val:""}]});
+	var sel_type;
+
+	var tt = {
+		elem:$("#ttable"),
+		titles:['序号','不安全事件名称','发生时间','发生地点','描述','操作'],
+		items:"请选择条件查询",
+	};
+	var ttable = new fn_ttable(tt);
+	pageSign = 1;//分页需要的参数
+	curr = 1;//分页当前页
+
+	//配置当前时间
+	function init_data(){
+		$("#menu_start").val(format_date());
+		$("#menu_end").val(format_date({dd:"now"}));
+	}
+	init_data();
+
+	//获取车辆列表
+	function ajax_get_vehicles(){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:"json",
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_get_vehicles(data.data);
+			}
+		});
+	}
+
+	//fn-获取车辆
+	function fn_get_vehicles(items){
+		var options = [{name:"请选择",val:""}];
+		items.forEach(function(el,index){
+			options.push({val:el.id,name:el.name});
+		});
+		sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:options,selected_option:1,result:$("#sel_result")});
+		$("#btn_chart").click();
+	}
+
+	function fn_chart_line(data){
+		var colors = ["#008df2","#12e6d4","#fdca00","#ff482f"];
+
+		var html = `
+			<div class="single-item">
+				<div class="single-item-content single-echart-main">
+					<div class="single-echart" id="m2"></div>
+					<div class="single-echart-none">未查询到结果</div>
+				</div>
+			</div>
+		`;
+		$(".analysis-main-right").html(html);
+
+		if(!data || data.length === 0){
+			$(".analysis-main-right").find(".single-echart-none").show();
+			return;
+		}else{
+			$(".analysis-main-right").find(".single-echart-none").hide();
+		}
+
+		var myChart = echarts.init(document.getElementById("m2"));
+
+        var option = {
+        	title : {
+		        text: '不安全事件发生次数-时间趋势图',
+		        textStyle:{
+		        	color:"#fff",
+		        	fontWeight:100
+		        },
+		        top:12,
+		        x:'center'
+		    },
+        	color:colors,
+		    tooltip : {
+		        trigger: 'axis',
+		        axisPointer: {
+		            type: 'cross',
+		            label: {
+		                backgroundColor: '#6a7985'
+		            }
+		        }
+		    },
+		    grid: {
+		        left: '3%',
+		        right: '5%',
+		        bottom: '3%',
+		        top: '5%',
+		        containLabel: true
+		    },
+		    xAxis : [
+		        {
+		            type : 'category',
+		            boundaryGap : false,
+		            axisLabel:{
+		            	textStyle:{
+		            		color:"#fff"
+		            	},
+		            },
+		            axisLine:{show:false},
+		            axisTick:{show:false},
+		            splitLine:{show:false},
+		            data : data.x
+		        }
+		    ],
+		    yAxis : [
+		        {
+		            type : 'value',
+		            axisLabel:{
+		            	textStyle:{
+		            		color:"#fff"
+		            	},
+		            },
+		            axisLine:{show:false},
+		            //axisTick:{show:false},
+		            splitLine:{show:false},
+		        }
+		    ],
+		    series:{
+		    	name:"不安全事件发生次数",
+	            type:'line',
+	            symbol: 'none',
+	            areaStyle: {
+		            	normal: {
+		            	opacity:0.15,
+		            }
+		        },
+		        itemStyle:{
+		        	normal:{
+		        		color:colors[0]
+		        	}
+		        },
+	            data:data.y
+		    }
+		};
+
+        myChart.setOption(option);
+	}
+
+	function fn_chart_pie(data){
+		var html = `
+			<div class="single-item">
+				<div class="single-item-content single-echart-main">
+					<div class="single-echart" id="m1"></div>
+					<div class="single-echart-none">未查询到结果</div>
+				</div>
+			</div>`;
+		$(".analysis-main-left").html(html);
+		if(!data || data.y.length === 0){
+			$(".analysis-main-left").find(".single-echart-none").show();
+			return;
+		}else{
+			$(".analysis-main-left").find(".single-echart-none").hide();
+		}
+
+		var colors = ["#12E6D4","#FDCA00","#FF482F","#008DF2","#35FD00","#71e569","#B62DFA"];
+
+		var myChart = echarts.init(document.getElementById("m1"));
+
+        var option = {
+        	title : {
+		        text: '各类不安全事件占比',
+		        textStyle:{
+		        	color:"#fff",
+		        	fontWeight:100
+		        },
+		        top:12,
+		        x:'center'
+		    },
+        	color:colors,
+		    tooltip : {
+		        trigger: 'item',
+		        formatter: "{a} <br/>{b} : {c} ({d}%)"
+		    },
+		    // legend: {
+		    //     x : 'center',
+		    //     y : 'bottom',
+		    //     textStyle:{
+		    //     	color:"#fff"
+		    //     },
+		    //     data:data.x
+		    // },
+		    
+		    calculable : true,
+		    series : 
+		        {
+		            name:'不安全事件占比',
+		            type:'pie',
+		            radius : [30, 100],
+		            center : ['50%', '55%'],
+		            roseType : 'area',
+		            data:data.y
+		        }
+		    
+		};
+
+        myChart.setOption(option);
+	}
+
+	var json = {
+		pie:{
+			x:['rose1','rose2','rose3','rose4','rose5','rose6','rose7'],
+			y:[
+			    {value:10, name:'rose1'},
+			    {value:5, name:'rose2'},
+			    {value:15, name:'rose3'},
+			    {value:25, name:'rose4'},
+			    {value:20, name:'rose5'},
+			    {value:35, name:'rose6'},
+			    {value:30, name:'rose7'},
+			]
+		},
+		line:{
+			x:[1,2,3,4,5],
+			y:[1,2,3,4,5],
+		}
+	}
+
+	fn_chart_pie();
+	fn_chart_line();
+
+	//获取单车不安全事件图表
+	function ajax_get_one_vehicle_unsafety_incident_chart(set){
+		$.ajax({
+			url:ajax_106+"/get_one_vehicle_unsafety_incident_chart",
+			type:"post",
+			dataType:"json",
+			data:set
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_chart_pie(data.data.pie);
+				fn_chart_line(data.data.line);
+			}
+		});
+	}
+
+	//获取单车不安全事件列表
+	function ajax_get_one_vehicle_unsafety_incident_list(set){
+		$.ajax({
+			url:ajax_106+"/get_one_vehicle_unsafety_incident_list",
+			type:"post",
+			dataType:"json",
+			data:set
+		}).then(function(data){
+			if(data.code === "0000"){
+				data = data.data;
+				if(pageSign===1){
+					pageSign++;
+					new fn_page({elem:"pageDemo",pages:data.total,fn:ajax_get_one_vehicle_unsafety_incident_list,set:set});//初始化分页
+				}
+				fn_list(data.items,"vehicleunsafe-analysis");//fn-获取不安全事件列表
+			}else {
+				$("#pageDemo").html("");
+				ttable.init({items:[]});
+			}
+		});
+	}
+
+	//fn-不安全事件列表
+	function fn_list(items,sign){
+		if(!items || items.length==0){
+			ttable.init({items:[]});
+			return;
+		}
+		if(sign != "vehicleunsafe-analysis")return;
+		
+		var items = fn_format_arr(items);
+		var arr = [];
+		items.forEach(function(el,index){
+			var info = {
+				src:el.source,
+				infos:[
+					"车牌："+el.license_plate,
+					"事件："+el.accident_type,
+					"时间："+el.time,
+					"地址："+el.poi_name,
+					"速度："+el.speed,
+				]
+			};
+			index++;
+
+			var html_operation = el.source?'<a class="hover" d-data=\''+JSON.stringify(info)+'\'>查看图片记录</a>':'--';
+			var obj = {tds:[
+				index,
+				el.accident_type,
+				el.time,
+				el.poi_name,
+				el.detail,
+				html_operation,
+			]};
+			arr.push(obj);
+		});
+		ttable.init({items:arr});
+	}
+
+	//ajax-获得全部事件
+	function get_exception_list(){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_all_vehicle_exception_type',
+			type:'post',
+			dataType:'json',
+			data:{user_id:info_login.data.id}
+		}).then(function(data){
+			if(data.code === "0000"){
+				var options = [];
+				data.data.forEach(function(el,index){
+					var obj = {title:el.title,type:el.type,items:[]};
+					for(var i=0;i<el.exception.length;i++){
+						var isChecked = el.exception[i].status=="1"?true:false;
+						obj.items.push({
+							isChecked:isChecked,txt:el.exception[i].name,id:el.exception[i].code
+						});
+					}
+					options.push(obj);
+				});
+				sel_type = new infoAlert({
+					elem:$("#event_type"),
+					title:"事件选择",
+					items:options
+				});
+				sel_type.save();
+			}
+		});
+	}
+	get_exception_list();
+
+	$(function(){
+		ajax_get_vehicles();//获取车辆列表
+
+		$(document).off("click","#btn_chart").on("click","#btn_chart",function(){
+			var vehicle_id = sel_vehicle.value;
+			if(!vehicle_id){
+				toastr.error('请选择车辆');//提示框
+				return;
+			}
+
+			var menu_start = $("#menu_start").val();
+			var menu_end = $("#menu_end").val();
+
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!menu_end){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			if(menu_start >= menu_end){
+				toastr.error('开始时间不能大于等于结束时间！');//提示框
+				return;
+			}
+
+			var postData1 = {
+				vehicle_id:sel_vehicle.value,
+				start:$("#menu_start").val(),
+				end:$("#menu_end").val(),
+				types:JSON.stringify(sel_type.value),
+			};
+			ajax_get_one_vehicle_unsafety_incident_chart(postData1);
+
+			pageSign = 1;//分页需要的参数
+			curr = 1;//分页当前页
+			var postData2= {
+				vehicle_id:sel_vehicle.value,
+				start:$("#menu_start").val(),
+				end:$("#menu_end").val(),
+				types:JSON.stringify(sel_type.value),
+				poi_key:$("#poi_key").val(),
+				page:1,
+				interval:10,
+			};
+			ttable.init({items:'加载中'});
+			ajax_get_one_vehicle_unsafety_incident_list(postData2);
+		});
+
+		$(document).off("click",".hover").on("click",".hover",function(){
+			var obj = JSON.parse($(this).attr("d-data"));
+			new imgAlert({
+				index:0,
+				items:[obj],
+				navigation:false
+			});
+		});
+
+		$(document).off("click",".moperation-icon").on("click",".moperation-icon",function(){
+			var vehicle_id = sel_vehicle.value;
+			if(!vehicle_id){
+				toastr.error("请选择车辆");
+				return;
+			}
+			var obj = {id:vehicle_id}
+			window.sessionStorage.info_mngCarInfo = JSON.stringify(obj);
+			ajax_nav("mng-car-info-edit");
+		});
+	});
+</script>

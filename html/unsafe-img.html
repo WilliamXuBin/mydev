@@ -1,0 +1,301 @@
+<!--不安全事件-->
+<!--输出-->
+<!--window.sessionStorage.info_monitorTrack-->
+<!--vehicle_id-->
+<!--type-->
+<!--start-->
+<!--end-->
+<style>
+	.mainBox{margin-top:50px;}
+
+	.capacity-table{margin:20px 0 0 0;}
+	.capacity-table-space{display:inline-block;width:100px;}
+
+	.singleTab{border-radius:3px;overflow:hidden;margin-bottom:10px;display:inline-block;}
+	.singleTab-span{width:150px;height:50px;line-height:50px;text-align:center;color:#fff;float:left;}
+	.singleTab .default{background:#11455c;}
+	.singleTab .online{background:#2ca5c8;}
+
+	.unsafeImg{width:1200px;margin:20px auto;}
+	.unsafeImt-box{margin-bottom:10px;}
+	.unsafeImg-title{}
+	.unsafeImg-title-left{color:#fff;position:relative;padding-left:12px;height:32px;line-height:32px;float:left;}
+	.unsafeImg-title-left:before{position:absolute;top:9px;left:0px;content:"\20";width:4px;height:14px;background:#ff9c18;border-radius:3px;}
+	.unsafeImg-title-right{height:32px;line-height:32px;float:right;color:#fff;background-repeat:no-repeat;background-position:right center;padding-right:24px;cursor:pointer;}
+	.unsafeImg-title-iconUp{background-image:url('img/icon/arrow_white/up.png');}
+	.unsafeImg-title-iconDown{background-image:url('img/icon/arrow_white/down.png');}
+	.unsafeImg-content{margin-top:5px;}
+	.unsafeImg-item{float:left;margin-right:12px;margin-bottom:30px;}
+	.unsafeImg-item:nth-child(5n){margin-right:0;}
+	.unsafeImg-item-img{width:230px;height:170px;}
+	.unsafeImg-item-img img{width:230px;height:170px;}
+	.unsafeImg-item-txt{margin-top:10px;width:230px;}
+	.unsafeImg-item-txt span{width:100%;height:24px;overflow:hidden;display:block;color:#fff;text-overflow:ellipsis;white-space: nowrap;}
+	.unsafeImg-line{border-bottom:1px solid #104765;padding-bottom:5px;}
+	.unsafeImg-none{text-align:center;color:#fff;margin:100px 0;display:none;}
+</style>
+
+<div class="mainBox">
+	<div class="singleTab zoom">
+		<div class="singleTab-span default">不安全事件明细</div>
+		<div class="singleTab-span online">不安全事件照片</div>
+	</div>
+	<div class="singleMenu zoom">
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">开始时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_start" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',btns:['clear', 'confirm'],format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">结束时间</div>
+			<div class="singleMenu-item-content" style="width:170px;">
+				<input type="text" class="dtext" placeholder="请选择" id="menu_end" onclick="laydate.render({elem:this,type:'datetime',position:'fixed',format:'yyyy-MM-dd HH:mm:ss',theme:'#44bae0',show:true,trigger:'click',max:1});" />
+			</div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">事件类型</div>
+			<div class="singleMenu-item-content" id="type" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item zoom">
+			<div class="singleMenu-item-txt">选择车辆</div>
+			<div class="singleMenu-item-content" id="vehicle" style="width:200px;"></div>
+		</div>
+		<div class="singleMenu-item"><button class="dbtn" id="search">确定</button></div>
+	</div>
+
+	<div class="unsafeImg"></div>
+	<div class="unsafeImg-none">无图片数据</div>
+</div>
+<script type="text/javascript">
+	
+
+	//fn_breadcrumbs
+	fn_breadcrumbs([
+		{name:"安全中心"},
+		{name:"不安全事件",href:"unsafe-incident"},
+		{name:"不安全事件照片"},
+	]);
+
+	var sel_type='',//事件类型
+		sel_vehicle,//车辆ID
+		menu_start='',
+		menu_end='';
+
+	var infos_img = [];
+
+	//ajax-获得全部车辆
+	function get_vehicles(set){
+		$.ajax({
+			url:ajax_106+'/get_vehicles',
+			type:'post',
+			dataType:'json',
+			async:false,
+			data:{
+				role_id:info_login.data.roleid,
+				extra_id:info_login.data.extraid,
+			},
+		}).then(function(data){
+			if(data.code === "0000"){
+				var options = [];
+				data.data.forEach(function(el,index){
+					options.push({isChecked:true,txt:el.name,id:el.id});
+				});
+				sel_vehicle = new infoAlert({
+					elem:$("#vehicle"),
+					type:"search",
+					items:options
+				});
+				sel_vehicle.save();
+			}
+		});
+	}
+
+	//ajax-获得全部事件
+	function get_exception_list(){
+		$.ajax({
+			url:'https://api0.youbanganda.com/get_all_vehicle_exception_type',
+			type:'post',
+			dataType:'json',
+			data:{user_id:info_login.data.id},
+			async:false,
+		}).then(function(data){
+			if(data.code === "0000"){
+				var options = [];
+				data.data.forEach(function(el,index){
+					var obj = {title:el.title,type:el.type,items:[]}
+					for(var i=0;i<el.exception.length;i++){
+						var isChecked = el.exception[i].status=="1"?true:false;
+						obj.items.push({
+							isChecked:isChecked,txt:el.exception[i].name,id:el.exception[i].code
+						});
+					}
+					options.push(obj)
+				});
+				sel_type = new infoAlert({
+					elem:$("#type"),
+					items:options
+				});
+				sel_type.save();
+			}
+		});
+	}
+
+	//ajax-获取车辆异常图片
+	function ajax_get_vehicle_exception_photos(set){
+		$.ajax({
+			url:ajax_106+'/get_vehicle_exception_photos',
+			type:'post',
+			dataType:'json',
+			data:set,
+		}).then(function(data){
+			if(data.code === "0000"){
+				fn_list_unsafeImg(data.data);
+			}else{
+				fn_list_unsafeImg(false);
+			}
+		});
+	}
+
+	function fn_list_unsafeImg(items){
+		if(!items || items.length === 0){
+			$(".unsafeImg").html("");
+			$(".unsafeImg-none").show();
+			return;
+		}
+		$(".unsafeImg-none").hide();
+
+		var html = "";
+		infos_img = [];
+		items.forEach(function(el,index){
+			var html_title = '<div class="unsafeImg-title zoom"><div class="unsafeImg-title-left">'+el.day+'</div><div class="unsafeImg-title-right unsafeImg-title-iconUp">收起</div></div>';
+
+			var html_imgs = "";
+			for(var i=0;i<el.exception.length;i++){
+				var html_span = '<span>车牌：'+el.exception[i].license+'</span><span>事件：'+el.exception[i].type+'</span><span>时间：'+el.exception[i].time+'</span><span>地址：'+el.exception[i].poi_name+'</span><span>速度：'+el.exception[i].speed+'</span>';
+
+				var obj = {
+					src:el.exception[i].source,
+					infos:[
+						"车牌："+el.exception[i].license,
+						"事件："+el.exception[i].type,
+						"时间："+el.exception[i].time,
+						"地址："+el.exception[i].poi_name,
+						"速度："+el.exception[i].speed,
+					],
+					index:el.exception[i].id
+				};
+				html_imgs += '<div class="unsafeImg-item"><div class="unsafeImg-item-img" d-data=\''+el.exception[i].id+'\'><img src="'+el.exception[i].source+'" /></div><div class="unsafeImg-item-txt">'+html_span+'</div></div>';
+
+				infos_img.push(obj);
+			}
+
+			html += '<div class="unsafeImt-box">' + html_title + '<div class="unsafeImg-content zoom">' + html_imgs + '</div></div>';
+		});
+		$(".unsafeImg").html(html);
+	}
+
+	//配置当前时间
+	function init_data(){
+		if(window.sessionStorage.info_tab_unsafe){
+			info_tab_unsafe = JSON.parse(window.sessionStorage.info_tab_unsafe);
+			$("#menu_start").val(info_tab_unsafe.start);
+			$("#menu_end").val(info_tab_unsafe.end);
+		}else{
+			$("#menu_start").val(format_date());
+			$("#menu_end").val(format_date({dd:"now"}));
+		}
+	}
+
+	//选项卡保存数据
+	function fn_infoTab(){
+		var start = $("#menu_start").val();
+		var end = $("#menu_end").val();
+		if(window.sessionStorage.info_tab_unsafe){
+			info_tab_unsafe = JSON.parse(window.sessionStorage.info_tab_unsafe);
+			info_tab_unsafe.start = start;
+			info_tab_unsafe.end = end;
+		}else{
+			info_tab_unsafe = {
+				start:start,
+				end:end,
+			};
+		}
+		window.sessionStorage.info_tab_unsafe = JSON.stringify(info_tab_unsafe);
+	}
+
+	$(function(){
+		get_vehicles();//ajax-获得全部车辆
+		get_exception_list();//ajax-获得全部事件
+		init_data();//配置当前时间
+		var postData = {
+			vehicle_ids:JSON.stringify(sel_vehicle.value),
+			types:JSON.stringify(sel_type.value),
+			start:$("#menu_start").val(),
+			end:$("#menu_end").val(),
+		};
+		ajax_get_vehicle_exception_photos(postData);
+
+		//点击搜索
+		$(document).off("click","#search").on("click","#search",function(){
+			menu_start = $("#menu_start").val();
+			menu_end = $("#menu_end").val();
+			
+			if(!menu_start){
+				toastr.error('请选择开始时间');//提示框
+				return;
+			}
+
+			if(!menu_end){
+				toastr.error('请选择结束时间');//提示框
+				return;
+			}
+
+			if(menu_start >= menu_end){
+				toastr.error('开始时间不能大于等于结束时间！');//提示框
+				return;
+			}
+
+			//if(!daysMath({start:startTime,end:endTime}))return;
+
+			postData = {
+				types:JSON.stringify(sel_type.value),
+				vehicle_ids:JSON.stringify(sel_vehicle.value),
+				start:$("#menu_start").val(),
+				end:$("#menu_end").val(),
+			};
+			ajax_get_vehicle_exception_photos(postData);
+		});
+
+		//event-showlist
+		$(document).off("click",".unsafeImg-title-right").on("click",".unsafeImg-title-right",function(){
+			var _this = $(this);
+			_this.parent().siblings(".unsafeImg-content").stop(true,true).slideToggle("fast");
+			if(_this.hasClass("unsafeImg-title-iconUp")){
+				_this.removeClass("unsafeImg-title-iconUp").addClass("unsafeImg-title-iconDown");
+				_this.html("展开");
+				_this.parent().addClass("unsafeImg-line");
+			}else{
+				_this.removeClass("unsafeImg-title-iconDown").addClass("unsafeImg-title-iconUp");
+				_this.html("收起");
+				_this.parent().removeClass("unsafeImg-line");
+			}
+		});
+
+		$(document).off("click",".unsafeImg-item-img").on("click",".unsafeImg-item-img",function(){
+			var obj = JSON.parse($(this).attr("d-data"));
+			new imgAlert({
+				index:obj,
+				items:infos_img
+			});
+		});
+
+		//点击跳页
+		$(".singleTab").find(".default").click(function(){
+			//fn_infoTab();//选项卡保存数据
+			ajax_nav("unsafe-incident");
+		});
+
+		$(document).off("click",".singleTab-span");
+	});
+</script>

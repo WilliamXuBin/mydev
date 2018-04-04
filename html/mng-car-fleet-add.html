@@ -1,0 +1,72 @@
+<style>
+    
+</style>
+    
+<div class="mngCar">
+    <div class="mngCar-main"></div>
+    <div class="mngCar-add-btn"><button class="moperation-btn" id="save">确定</button></div>
+</div>
+
+<script type="text/javascript">
+    //fn_breadcrumbs
+    fn_breadcrumbs([
+        {name:"系统中心"},
+        {name:"车辆管理",href:"mng-nav"},
+        {name:"车队信息",href:"mng-car-fleet"},
+        {name:"新增车队"},
+    ]);
+    
+    var json = {
+        elem:$(".mngCar-main"),
+        items:[
+            {
+                title:"车队基本信息",
+                items:[
+                    {title:"车队名称：",required:true,value:"",id:"team_name"},
+                    {title:"车队编码：",value:"",id:"team_number"},
+                    {title:"负责人姓名：",required:true,value:"",id:"charge_person_name"},
+                    {title:"负责人电话：",required:true,value:"",id:"charge_person_phone"},
+                    {title:"备注信息：",type:"textarea",id:"imformation",colspan:4},
+                ],
+            },
+        ]
+    };
+    var menu = new fn_edit_begin(json);
+
+    function ajax_insert_vehicle_team_info(set){
+        $.ajax({
+            url:ajax_106+"/insert_vehicle_team_info",
+            type:"post",
+            dataType:"json",
+            data:set,
+        }).then(function(data){
+            if(data.code === "0000"){
+                toastr.success(data.message);
+                ajax_nav("mng-car-fleet");
+            }
+        });
+    }
+
+    $(function(){
+        //event-save
+        $(document).off("click","#save").on("click","#save",function(){
+            var is = menu.is_required();
+            if(!is)return;
+            var data_set = {
+                company_id:"",
+                enterprise_id:info_login.data.extraid,//总公司id
+                team_name:$("#team_name").val(),
+                team_number:$("#team_number").val(),
+                charge_person_name:$("#charge_person_name").val(),
+                charge_person_phone:$("#charge_person_phone").val(),
+                imformation:$("#imformation").val(),
+            };
+            ajax_insert_vehicle_team_info(data_set)
+            console.log(is);
+        });
+
+    });
+</script>
+
+
+
