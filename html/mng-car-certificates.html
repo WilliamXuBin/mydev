@@ -153,6 +153,7 @@
                 //el.engine_number,
                 el.start_effective_date,
                 el.end_effective_date,
+                el.information,
                 html_operation,
             ]};
             arr.push(obj);
@@ -196,6 +197,7 @@
                 //el.engine_number,
                 el.start_effective_date,
                 el.end_effective_date,
+                el.information,
                 html_operation,
             ]};
             arr.push(obj);
@@ -239,6 +241,7 @@
                 //el.engine_number,
                 el.start_effective_date,
                 el.end_effective_date,
+                el.information,
                 html_operation,
             ]};
             arr.push(obj);
@@ -327,7 +330,7 @@
             }else if(sign === "运输证管理"){
                 tt = {
                     elem:$("#ttable"),
-                    titles:['checkbox','序号','车牌号码','所属公司','所属车队','运输证号','证件开始时间','证件结束时间','操作'],
+                    titles:['checkbox','序号','车牌号码','所属公司','所属车队','运输证号','证件开始时间','证件结束时间','备注信息','操作'],
                     items:"请选择条件查询",
                 };
                 pageSign = 1;//分页需要的参数
@@ -342,7 +345,7 @@
             }else if(sign === "保单"){
                 tt = {
                     elem:$("#ttable"),
-                    titles:['checkbox','序号','车牌号码','所属公司','所属车队','保单号','证件开始时间','证件结束时间','操作'],
+                    titles:['checkbox','序号','车牌号码','所属公司','所属车队','保单号','证件开始时间','证件结束时间','备注信息','操作'],
                     items:"请选择条件查询",
                 };
                 pageSign = 1;//分页需要的参数
@@ -357,7 +360,7 @@
             }else if(sign === "车辆其他"){
                 tt = {
                     elem:$("#ttable"),
-                    titles:['checkbox','序号','车牌号码','所属公司','所属车队','其他证件号','证件开始时间','证件结束时间','操作'],
+                    titles:['checkbox','序号','车牌号码','所属公司','所属车队','其他证件号','证件开始时间','证件结束时间','备注信息','操作'],
                     items:"请选择条件查询",
                 };
                 pageSign = 1;//分页需要的参数
