@@ -1322,6 +1322,54 @@ function fn_edit_begin(config){
     	$(this).parent().siblings(".mngCar-photo-default").show();
     });
 
+    config.elem.off("click",".boxOrigin-tab span").on("click",".boxOrigin-tab span",function(){
+    	var _this_child = $(this);
+    	var index = $(this).index();
+
+    	if(index == 0){
+    		var obj = {
+	    		elem:_this_child.parent().siblings(".boxOrigin-list").find("ul")
+	    	}
+	    	_this.ajax_provinces(obj);
+	    	_this_child.parent().html("<span>省/直辖市</span>");
+    	}
+    });
+
+    config.elem.off("click",".boxOrigin-list li").on("click",".boxOrigin-list li",function(){
+    	var code = $(this).attr("d-code");
+    	var val = $(this).html();
+    	var type = $(this).attr("d-type");
+
+    	if(type === "city"){
+    		$(this).parents(".mngCar-item-content").find("input").val(val);
+    		$(this).parents(".mngCar-item-content").find("input").attr("d-code",code);
+    		$(this).parents(".boxOrigin").hide();
+    		return;
+    	}
+    	var obj = {
+    		elem:$(this).parent(),
+    		code:code
+    	}
+    	_this.ajax_city(obj);
+    	$(this).parents(".boxOrigin").find(".boxOrigin-tab span").html(val);
+    	$(this).parents(".boxOrigin").find(".boxOrigin-tab span").removeClass("active");
+    	$(this).parents(".boxOrigin").find(".boxOrigin-tab").append('<span class="active">请选择</span>');
+    });
+
+    config.elem.off("click",".mngCar-item-origin").on("click",".mngCar-item-origin",function(){
+    	$(this).siblings(".boxOrigin").find(".boxOrigin-tab").html("<span>省/直辖市</span>");
+    	$(this).siblings(".boxOrigin").show();
+    	$(this).siblings(".boxOrigin").focus();
+    	var obj = {
+    		elem:$(this).siblings(".boxOrigin").find("ul")
+    	}
+    	_this.ajax_provinces(obj);
+    });
+
+    config.elem.off("blur",".boxOrigin").on("blur",".boxOrigin",function(){
+    	$(this).hide();
+    });
+
     function ajax_token_qiniu(elem,type,index){
     	var pre_url="";
 		$.ajax({
@@ -1431,6 +1479,9 @@ fn_edit_begin.prototype = {
             	width_items = 'style="width:33.3%;margin-right:0;"';
                 html = re_html_upload_fixed(el);
                 break;
+            case "origin":
+            	html = re_html_origin(el);
+            	break;
             default:
                 html = re_html_text(el);
         }
@@ -1502,6 +1553,14 @@ fn_edit_begin.prototype = {
             return '<div class="mngCar-item zoom" '+width_items+'><div class="mngCar-item-title">'+required_html+obj.title+'</div><div class="mngCar-item-content zoom"><div class="mngCar-photo dtext">'+h1+'</div></div></div>';
         }
 
+        function re_html_origin(obj){
+        	var value = obj.value?"value="+obj.value:"";
+        	var disabled = obj.disabled?'disabled="disabled"':"";
+        	var required = obj.required?'d-error="请输入'+obj.title.substring(0,obj.title.length-1)+'" required':'';
+
+        	return '<div class="mngCar-item zoom" '+width_items+'><div class="mngCar-item-title">'+required_html+obj.title+'</div><div class="mngCar-item-content"><input type="text" class="dtext mngCar-item-text mngCar-item-origin" d-type="text" id="'+obj.id+'" '+required+' '+value+' maxlength="50" '+disabled+' /><div class="boxOrigin" tabindex="1"><div class="boxOrigin-tab zoom"><span>省/直辖市</span></div><div class="boxOrigin-list zoom"><ul class="zoom"></ul></div></div></div></div>';
+        }
+
         return html;
     },
     re_html_photo:function(obj){
@@ -1540,6 +1599,65 @@ fn_edit_begin.prototype = {
             }
         }
         return true;
-    }
+    },
+    ajax_provinces:function(obj){
+    	$.ajax({
+    		url:ajax_106+'/get_all_provinces',
+    		type:'post',
+    		dataType:'json',
+    		async:true,
+    	}).then(function(data){
+    		if(data.code === "0000"){
+    			var data = data.data;
 
+    			var html_li = "";
+    			data.forEach(function(el,index){
+    				html_li += '<li d-code="'+el.code+'">'+el.name+'</li>';
+    			});
+
+    			obj.elem.html(html_li);
+    		}
+    	});
+    },
+    ajax_city:function(obj){
+    	$.ajax({
+    		url:ajax_106+'/get_province_citys',
+    		type:'post',
+    		dataType:'json',
+    		async:true,
+    		data:{
+    			code:obj.code
+    		},
+    	}).then(function(data){
+    		if(data.code === "0000"){
+    			var data = data.data;
+
+    			var html_li = "";
+    			data.forEach(function(el,index){
+    				html_li += '<li d-code="'+el.code+'" d-type="city">'+el.name+'</li>';
+    			});
+
+    			obj.elem.html(html_li);
+    		}
+    	});
+    },
+    re_provinces:function(){
+    	var html = "";
+    	$.ajax({
+    		url:ajax_106+'/get_all_provinces',
+    		type:'post',
+    		dataType:'json',
+    		async:false,
+    	}).then(function(data){
+    		if(data.code === "0000"){
+    			var data = data.data;
+
+    			data.forEach(function(el,index){
+    				html += '<li d-code="'+el.code+'">'+el.name+'</li>';
+    			});
+
+    		}
+    	});
+    	return html;
+    }
 }
