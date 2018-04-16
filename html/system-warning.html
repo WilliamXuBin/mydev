@@ -3,6 +3,8 @@
 
 	.capacity-table{margin:20px 0 0 0;}
 	.capacity-table-space{display:inline-block;width:100px;}
+	.capacity-downLoad{color:#fff;margin-bottom:10px;font-size:14px;}
+	.capacity-downLoad span{color:#3cbee0;font-size:14px;}
 
 	.frameHandle{display:none;}
 	.frameHandle-main{position:fixed;top:50%;left:50%;width:400px;background:#fff;border-radius:3px;z-index:2;padding:15px;margin-left:-200px;margin-top:-150px;}
@@ -27,6 +29,7 @@
 	<div class="singleMenu zoom"></div>
 
 	<div class="capacity-table">
+		<div class="capacity-downLoad">下载报警数据：<span>Excel格式</span></div>
 		<table class="ttable" id="ttable"></table>
 		<div id="pageDemo"></div>
 	</div>
@@ -75,7 +78,7 @@
 
 	var tt = {
 		elem:$("#ttable"),
-		titles:['序号','报警时间','车牌号','报警类型','报警级别','不安全名称','报警地点','详情','操作'],
+		titles:['序号','报警时间','车牌号','报警类型','报警级别','不安全名称','报警地点','操作'],
 		items:"请选择条件查询",
 	};
 	ttable = new fn_ttable(tt);
@@ -84,12 +87,21 @@
 	var json = {
 		elem:$(".singleMenu"),
 		items:[
+			{name:"报警时间",type:"date",typeStyle:"start",id:"menu_start",placeholder:"开始时间"},
+			{name:"-",type:"date",typeStyle:"end",id:"menu_end",placeholder:"结束时间"},
 			{name:"车牌号码",id:"vehicle_id",type:"select"},
 			{name:"刷新",id:"refresh",type:"btn"},
 			// {name:"处理",id:"handle",type:"btn"},
 		],
 	}
 	new singleMenu(json);
+
+	//配置当前时间
+	function init_data(){
+		$("#menu_start").val(format_date({days:-7}));
+		$("#menu_end").val(format_date({dd:"now"}));
+	}
+	init_data();
 
 	var sel_vehicle;
 	//ajax-获得全部车辆
@@ -242,8 +254,7 @@
 					el.grade,
 					el.accident_type,
 					el.poi,
-					source,
-					'<a class="hover handle" d-infos=\''+JSON.stringify(infos)+'\'>处理</a>'
+					'--&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+'<a class="hover handle" d-infos=\''+JSON.stringify(infos)+'\'>处理</a>'
 				]};
 			}
 			

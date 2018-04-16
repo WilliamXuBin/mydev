@@ -715,13 +715,13 @@ function ajax_get_vehicles_info(){
 		async:true,
 	}).then(function(data){
 		if(data.code === "0000"){
-			var sign = true;
-			for(var i=0;i<arr.length;i++){
-				if(arr[i] != ""){
-					sign = false;
-				}
-			}
-			if(sign)return;
+			// var sign = true;
+			// for(var i=0;i<arr.length;i++){
+			// 	if(arr[i] != ""){
+			// 		sign = false;
+			// 	}
+			// }
+			// if(sign)return;
 
 			for(var i=0;i<arr.length;i++){
 				if(arr[i] != ""){
@@ -751,7 +751,7 @@ function fn_arr_out(id){
 
 $(function(){
 	ajax_get_vehicles();//获取车辆列表
-	timer_vehicle = setInterval(ajax_get_vehicles_info,10000);//获取车辆列表实时信息
+	timer_vehicle = setInterval(ajax_get_vehicles_info,1000);//获取车辆列表实时信息
 
 	//点击操作复选框
 	$(document).on("click",".menu-check",function(){
@@ -933,7 +933,7 @@ $(function(){
 	});
 });
 
-//
+//实时获取已点击的车辆状态
 function ajax_get_playing_vehicle_info(_data){
 	$.ajax({
 		url:'https://api0.youbanganda.com/get_playing_vehicle_info',
@@ -966,6 +966,7 @@ function ajax_get_playing_vehicle_info(_data){
 	});
 }
 
+//实时获取已点击的车辆状态2
 function ajax_get_playing_vehicle_status_switch(set,n){
 	$.ajax({
 		url:ajax_106+"/get_playing_vehicle_status_switch",

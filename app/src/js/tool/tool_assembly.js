@@ -1298,6 +1298,7 @@ function fn_edit_begin(config){
         var id = $(".mngCar-select").eq(index).attr("id");
         var required = $(".mngCar-select").eq(index).attr("d-required");
         var options= [{name:"请选择",val:""}];
+        console.log(id)
     });
 
     config.elem.off("change",".file-fixed").on("change",".file-fixed",function(){
@@ -1456,7 +1457,9 @@ fn_edit_begin.prototype = {
         var required_html = el.required?"<span>*</span>":"";
 
         var width_items = "";
-        if(_this.width_content){width_items = 'style="width:'+this.width_content+';margin-right:0;"';}
+        if(_this.width_content){
+        	width_items = 'style="width:'+this.width_content+';margin-right:0;"';
+        }
 
         var html = "";
         switch (el.type){
@@ -1482,6 +1485,9 @@ fn_edit_begin.prototype = {
             case "origin":
             	html = re_html_origin(el);
             	break;
+            case "addressSelectText":
+            	html = re_html_addressSelectText(el);
+            	break;
             default:
                 html = re_html_text(el);
         }
@@ -1505,6 +1511,7 @@ fn_edit_begin.prototype = {
         	var max1 = obj.max1?",max:"+obj.max1:"";
         	var max2 = obj.max2?",max:"+obj.max2:"";
 
+        	var disabled = obj.disabled?'disabled="disabled"':"";
             return '<div class="mngCar-item zoom" '+width_items+'><div class="mngCar-item-title">'+required_html+obj.title+'</div><div class="mngCar-item-content"><input type="text" class="dtext mngCar-item-text icon-date" onclick="laydate.render({elem:this,type:\'datetime\',position:\'fixed\',format:\'yyyy-MM-dd HH:mm:ss\',theme:\'#44bae0\',show:true,trigger:\'click\''+max1+'});" placeholder="'+obj.placeholder1+'" id="'+obj.id1+'" '+value1+' style="width:170px;" '+required1+' maxlength="50" d-type="date" /><span style="color:#fff;margin:0 10px;">——</span><input type="text" class="dtext mngCar-item-text icon-date" onclick="laydate.render({elem:this,type:\'datetime\',position:\'fixed\',format:\'yyyy-MM-dd HH:mm:ss\',theme:\'#44bae0\',show:true,trigger:\'click\''+max2+'});" placeholder="'+obj.placeholder2+'" id="'+obj.id2+'" '+value2+' style="width:170px;" '+required2+' maxlength="50" d-type="date" /></div></div>';
         }
 
@@ -1559,6 +1566,21 @@ fn_edit_begin.prototype = {
         	var required = obj.required?'d-error="请输入'+obj.title.substring(0,obj.title.length-1)+'" required':'';
 
         	return '<div class="mngCar-item zoom" '+width_items+'><div class="mngCar-item-title">'+required_html+obj.title+'</div><div class="mngCar-item-content"><input type="text" class="dtext mngCar-item-text mngCar-item-origin" d-type="text" id="'+obj.id+'" '+required+' '+value+' maxlength="50" '+disabled+' /><div class="boxOrigin" tabindex="1"><div class="boxOrigin-tab zoom"><span>省/直辖市</span></div><div class="boxOrigin-list zoom"><ul class="zoom"></ul></div></div></div></div>';
+        }
+
+        function re_html_addressSelectText(obj){
+        	console.log(obj)
+        	var value = obj.value?obj.value:"";
+        	var required = obj.required?'d-error="请输入'+obj.title.substring(0,obj.title.length-1)+'" required':'';
+        	return `
+				<div class="mngCar-item zoom" `+width_items+`>
+					<div class="mngCar-item-title">`+required_html+obj.title+`</div>
+					<div class="mngCar-item-content zoom">
+						<div class="mngCar-item-content mngCar-select" id="`+obj.id+`" style="float:left;margin-right:10px;width:180px"></div>
+						<input type="text" class="dtext mngCar-item-text" d-type="text" id="`+obj.id_text+`" `+value+` maxlength="50" `+required+` style="float:right;width:calc(100% - 190px)" />
+					</div>
+				</div>
+        	`;
         }
 
         return html;

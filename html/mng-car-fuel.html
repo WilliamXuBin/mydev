@@ -1,12 +1,14 @@
 <style>
     .mngCar{margin:100px 20px;width:auto;}
-    .mngCar-btn{margin-bottom:10px;}
+    .mngCar-btn{margin:20px 0 10px 0;}
 </style>
     
 <div class="mngCar">
+    <div class="singleMenu zoom"></div>
+
     <div class="mngCar-btn">
         <button class="moperation-btn moperation-add icon-add" id="add">添加</button>
-        <button class="moperation-btn moperation-remove icon-remove" id="remove">删除</button>
+        <!-- <button class="moperation-btn moperation-remove icon-remove" id="remove">删除</button> -->
     </div>
 
     <table class="ttable" id="ttable"></table>
@@ -23,10 +25,49 @@
 
     var tt = {
         elem:$("#ttable"),
-        titles:['checkbox','序号','车牌号码','所属公司','所属车队','加油时间','加油量（L）','单价（元）','总金额（元）','加油前油量','标准百公里油耗','备注','操作'],
+        titles:['序号','车牌号码','所属公司','加油时间','加油站','地址','加油前油量（L）','加油量（L）','单价（元/L）','总价（元）','操作'],
         items:"请选择条件查询",
     };
     var ttable = new fn_ttable(tt);
+
+    var json = {
+        elem:$(".singleMenu"),
+        items:[
+            {name:"车牌号码",id:"sel_vehicle",type:"select"},
+            {name:"加油日期",id:"text_date",type:"date"},
+            {name:"确定",id:"ok",type:"btn"},
+        ],
+    }
+    new singleMenu(json);
+    var sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:[{name:"请选择",val:""}]});
+
+    //获取车辆列表
+    function ajax_get_vehicles(){
+        $.ajax({
+            url:ajax_106+'/get_vehicles',
+            type:'post',
+            dataType:"json",
+            data:{
+                role_id:info_login.data.roleid,
+                extra_id:info_login.data.extraid,
+            },
+        }).then(function(data){
+            if(data.code === "0000"){
+                fn_get_vehicles(data.data);
+            }
+        });
+    }
+    ajax_get_vehicles();
+
+    //fn-获取车辆
+    function fn_get_vehicles(items){
+        var options = [{name:"请选择",val:""}];
+        items.forEach(function(el,index){
+            options.push({val:el.id,name:el.name});
+        });
+        sel_vehicle = new fn_tselect({elem:$("#sel_vehicle"),options:options,selected_option:1,result:$("#sel_result")});
+        $("#btn_chart").click();
+    }
 
     function ajax_get_refuel_record_list(set){
         $.ajax({
@@ -72,9 +113,9 @@
                 id:el.id,
                 type:"details"
             };
-            var html_operation = '<a class="hover" d-data=\''+JSON.stringify(hover_data)+'\'>编辑</a>';
+            var html_operation = '<a class="hover hover_edit" d-data=\''+JSON.stringify(hover_data)+'\'>编辑</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="hover hover_remove" d-data=\''+JSON.stringify(hover_data)+'\'>删除</a>';
             var obj = {tds:[
-                '<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
+                //'<div class="dcheckbox"><input type="checkbox" id='+el.id+'><label for="'+el.id+'" class="default"></label></div>',
                 index,
                 el.license_plate,
                 el.enterprise_name,
@@ -85,7 +126,6 @@
                 el.total_amount,
                 el.oil_quantity_before_refueling,
                 el.oil_wear_100,
-                el.information,
                 html_operation,
             ]};
             arr.push(obj);
@@ -124,18 +164,19 @@
             ajax_nav("mng-car-fuel-add");
         });
 
-        $(document).off("click","#remove").on("click","#remove",function(){
-            var arr = ttable.checked();
-            if(arr.length == 0){
-                toastr.error("请选择需要删除的项");
-                return;
-            }
-            arr = JSON.stringify(arr);
-            ajax_delete_refuel_record(arr);
-            console.log(arr);
+        $(document).off("click",".hover_remove").on("click",".hover_remove",function(){
+            // var arr = ttable.checked();
+            // if(arr.length == 0){
+            //     toastr.error("请选择需要删除的项");
+            //     return;
+            // }
+            // arr = JSON.stringify(arr);
+            var data = $(this).attr("d-data");
+            data = JSON.parse(data);
+            ajax_delete_refuel_record([data.id]);
         });
 
-        $(document).off("click",".hover").on("click",".hover",function(){
+        $(document).off("click",".hover_edit").on("click",".hover_edit",function(){
             var data = $(this).attr("d-data");
             data = JSON.parse(data);
             window.sessionStorage.info_mngCarFuel = $(this).attr("d-data");

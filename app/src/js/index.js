@@ -122,7 +122,7 @@ function clear_storage(names){
 function ajax_nav(href,pushState){
 	fn_breadcrumbs(null);//fn_breadcrumbs
 
-	window.clearInterval(timer_vehicle);//清除实时监控定时器-获取车辆列表实时信息
+	if(href !== "realtime-monitor")window.clearInterval(timer_vehicle);//清除实时监控定时器-获取车辆列表实时信息
 
 	if(href !== "fence")fn_sess_remove('fenceInfo');//删除本地存储
 

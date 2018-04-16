@@ -5,6 +5,17 @@
 	.analysis-main-right{width:calc(100% - 520px);float:right;}
 	.moperation-left span{float:left;}
 	.moperation-icon{width:19px;height:32px;background:url("img/icon/detail.png") no-repeat;background-position:left center;float:left;margin-left:10px;cursor:pointer;}
+
+	.eventList{padding:0 12px;}
+	.eventList-item{}
+	.eventList-item-title{color:#fd9e28;}
+	.eventList-item-content{margin:10px 0;}
+	.eventList-item-content table{}
+	.eventList-item-content table td{color:#fff;width:10%;height:24px;line-height:24px;}
+	.eventList-item-content table td span{color:#fff;}
+	.eventList-item-checkbox .echeckbox{width:12px;height:24px;float:left;background-repeat:no-repeat;background-position:center;margin-right:7px;}
+	.eventList-item-checkbox .default{background-image:url('img/icon/checkbox.png');}
+	.eventList-item-checkbox .eventList-item-txt{width:calc(100% - 26px);float:right;margin-right:7px;}
 </style>
 
 <div class="analysis zoom">
@@ -19,7 +30,32 @@
 	</div>
 
 	<div class="moperation zoom">
-		<div class="moperation-left zoom"><span id="moperation_txt" style="display:block;">报表数据</span><div class="moperation-icon"></div></div>
+		<div class="moperation-left zoom" style="float:inherit;">
+			<span id="moperation_txt" style="display:block;">统计数据</span>
+		</div>
+		<div class="moperation content">
+			<div class="eventList">
+				<div class="eventList-item">
+					<div class="eventList-item-title">疲劳报警(共计<span>12</span>)</div>
+					<div class="eventList-item-content zoom">
+						<table>
+							<tr>
+								<td class="zoom eventList-item-checkbox" valign="top">
+									<div class="echeckbox default"></div>
+									<div class="eventList-item-txt" id="1">长时间闭眼（<span>0</span>）</div>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="moperation zoom">
+		<div class="moperation-left zoom">
+			<span id="moperation_txt" style="display:block;">报表数据</span>
+		</div>
 	</div>
 		
 	<table class="ttable" id="ttable"></table>
@@ -370,13 +406,70 @@
 					items:options
 				});
 				sel_type.save();
+
+				var column = 6;
+				var options_event = [];
+				data.data.forEach(function(el,index){
+					var obj = {title:el.title,type:el.type,items:[[]]};
+					var num = 0;
+					for(var i=0;i<el.exception.length;i++){
+						if(i < column*(num+1)){
+							var isChecked = el.exception[i].status=="1"?true:false;
+							obj.items[num].push({
+								isChecked:isChecked,txt:el.exception[i].name,id:el.exception[i].code
+							});
+						}else{
+							num++;
+							obj.items[num] = [{
+								isChecked:isChecked,txt:el.exception[i].name,id:el.exception[i].code
+							}];
+						}
+					}
+					options_event.push(obj)
+				});
+
+				html_table_eventList(options_event);
+				var width_td = $(".eventList-item-content").width()/column;
+				$(".eventList-item-content").find("td").width(width_td);
+				ajax_get_vehicles();//获取车辆列表
 			}
 		});
 	}
 	get_exception_list();
 
+	//统计数据
+	function html_table_eventList(json){
+
+		var html = ``;
+		
+		json.forEach(function(el,index){
+			var html_tr = '';
+			for(var i=0;i<el.items.length;i++){
+				var item_i = el.items[i];
+				var html_td = '';
+				for(var j=0;j<item_i.length;j++){
+					html_td += `
+						<td class="zoom eventList-item-checkbox" valign="top">
+							<div class="echeckbox default"></div><div class="eventList-item-txt" id="1">`+item_i[j].txt+`（<span>0</span>）</div>
+						</td>
+					`;
+				}
+				html_tr += '<tr>'+html_td+'</tr>';
+			}
+			html += `
+				<div class="eventList-item">
+					<div class="eventList-item-title">`+el.title+`(共计<span>12</span>)</div>
+					<div class="eventList-item-content zoom">
+						<table>`+html_tr+`</table>
+					</div>
+				</div>
+			`;
+		});
+
+		$(".eventList").html(html)
+	}
+
 	$(function(){
-		ajax_get_vehicles();//获取车辆列表
 
 		$(document).off("click","#btn_chart").on("click","#btn_chart",function(){
 			var vehicle_id = sel_vehicle.value;
